@@ -1,5 +1,3 @@
-import https from "https";
-
 const express = require("express");
 const {MongoClient} = require("mongodb");
 const app = express();

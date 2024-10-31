@@ -26,6 +26,15 @@ app.use(cors(corsOptions))
 
 const userid = '7097162';
 const courseid = '2344966';
+
+// Spawn google classroom service
+const { spawn } = require('child_process');
+
+const child = spawn('node', ['./src/services/GoogleClassroomServices.js'], {
+    stdio: 'inherit' // Inherit the parent's stdio
+});
+
+
 app.get('/', (req, res) => {
     res.writeHead(200, {'Content-Type': 'text/html'})
     res.write(
