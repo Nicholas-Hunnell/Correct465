@@ -15,9 +15,10 @@ const uri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=t
 const client = new MongoClient(uri);
 
 //Token for Ben Harmon to serve as a temporary test for API calls
-//collin token: 1050~RHcrK4Aw3rNBDf86AYeAJPwXXyunUKtFcVn7LVZN9t4AxDN7DH4hwPBUTFK39QBx
+//collin token: 1050~VfGck36h7t3YHBfLx8nmWDQKJEzN4Yukn3KfNYh68eYDvzVGWe6aVfCxJYZ4E8DX
+const token = '1050~VfGck36h7t3YHBfLx8nmWDQKJEzN4Yukn3KfNYh68eYDvzVGWe6aVfCxJYZ4E8DX'
 const gtoken = 'ya29.a0AeDClZDEh7xcBKO_A5YW1C4IxQ6B_gCrEq0LYyz4beBwPyhpdm5vCJHu3h2wVaUlIgkQNUuEhr1dDgRLXFISL_p68IneGSKkuzXmEGWln3P7NwiEUB8PyUPQZXdHJGji0YQwqmgGIq9ECA1owr3VpUCHS4IiW6LUoO20L8tzaCgYKAVQSARESFQHGX2MiMHAjd17tYOMxykOBNF5ghQ0175';
-const token = '1050~EZhEtyeWBEA6kWeunCVDv3VZmCEn8PDt93rQKafFNC3QWPFEExeWkmCTaC9xM3kT';
+//const token = '1050~EZhEtyeWBEA6kWeunCVDv3VZmCEn8PDt93rQKafFNC3QWPFEExeWkmCTaC9xM3kT';
 const canvasHost = 'psu.instructure.com';
 const https = require('https');
 
@@ -34,7 +35,10 @@ const courseid = '2344966';
 // Spawn google classroom service
 const { spawn } = require('child_process');
 
-const child = spawn('node', ['./src/services/GoogleClassroomServices.js'], {
+const googleClassroom = spawn('node', ['./src/services/GoogleClassroomServices.js'], {
+    stdio: 'inherit' // Inherit the parent's stdio
+});
+const canvas = spawn('node', ['./src/services/CanvasServices.js'], {
     stdio: 'inherit' // Inherit the parent's stdio
 });
 

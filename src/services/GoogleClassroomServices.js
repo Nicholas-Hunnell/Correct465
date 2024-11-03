@@ -1,6 +1,9 @@
 const express = require("express");
 const {MongoClient} = require("mongodb");
 const app = express();
+const https = require('https');
+const { OAuth2Client } = require("google-auth-library");
+
 const port = 3002;
 const hostname = '127.0.0.1';
 
@@ -8,13 +11,19 @@ const hostname = '127.0.0.1';
 const uri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const client = new MongoClient(uri);
 
-
 // Start the Express server
 app.listen(port, hostname, () => {
     console.log(`Google Classroom services server running at http://${hostname}:${port}/`);
 });
 
+
+//Authentication
 const gtoken = 'ya29.a0AeDClZDEh7xcBKO_A5YW1C4IxQ6B_gCrEq0LYyz4beBwPyhpdm5vCJHu3h2wVaUlIgkQNUuEhr1dDgRLXFISL_p68IneGSKkuzXmEGWln3P7NwiEUB8PyUPQZXdHJGji0YQwqmgGIq9ECA1owr3VpUCHS4IiW6LUoO20L8tzaCgYKAVQSARESFQHGX2MiMHAjd17tYOMxykOBNF5ghQ0175';
+const clientId = "719533638212-nsi6gd0rgcpeb8opiq8emoqieq4bdh85.apps.googleusercontent.com";
+const clientSecret = "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"; // Set this in a .env file
+const redirectUri = "http://localhost:"+port+"/auth/google/callback"; // OAuth callback
+const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
+
 
 
 app.get('/Gclass/get_courses', (req, res) => {
@@ -94,29 +103,9 @@ app.get('/Gclass/get_user_profile', (req, res) => {
 });
 
 app.get('/Gclass/login', (req, res) => {
-    const pm2 = require('pm2');
-    pm2.connect((err) => {
-        if (err) {
-            console.error(err);
-            process.exit(2);
-        }
-
-        pm2.start({
-            script: 'googleClassroomAuth.js',
-            name: 'gClassAuth' // Give it a name
-        }, (err, apps) => {
-            if (err) {
-                console.error(err);
-                process.exit(2);
-            }
-
-            console.log('Second service started');
-        });
-    });
-
     const options = {
         hostname: '127.0.0.1',
-        port: 6000,
+        port: port,
         path: '/auth/google',
         method: 'GET',
         headers: {}
@@ -154,3 +143,50 @@ app.get('/Gclass/login', (req, res) => {
     apiRequest.end(); // Close the request properly
 })
 
+
+
+//app.engine('html', require('ejs').renderFile);
+//app.set('view engine', 'html');
+
+//app.use(express.json({limit: '10kb'}));
+
+app.get("/auth/google", (req, res) => {
+    const scopes = [
+        "https://www.googleapis.com/auth/classroom.courses.readonly",
+        "https://www.googleapis.com/auth/classroom.rosters.readonly"
+    ];
+
+    const authUrl = oAuth2Client.generateAuthUrl({
+        access_type: "offline", // Allows refresh token
+        scope: scopes,
+    });
+
+    res.redirect(authUrl);
+})
+
+app.get("/auth/google/callback", async (req, res) => {
+    const code = req.query.code;
+
+    if (!code) {
+        return res.status(400).send("Authorization code is missing");
+    }
+
+    try {
+        // Exchange code for tokens
+        const { tokens } = await oAuth2Client.getToken(code);
+        oAuth2Client.setCredentials(tokens);
+
+        // Store token in MongoDB
+        console.log(
+            "Token: "+tokens.access_token+"\n"+
+            "Refresh token: "+tokens.refresh_token+"\n"+
+            "Expiry date: "+tokens.expiry_date
+        )
+        res.redirect("http://localhost:3000/");
+
+
+    } catch (error) {
+        console.error("Error exchanging code for tokens:", error);
+        res.status(500).send("Authentication failed");
+    }
+});
