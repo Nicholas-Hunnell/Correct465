@@ -18,12 +18,11 @@ app.listen(port, hostname, () => {
 
 
 //Authentication
-const gtoken = 'ya29.a0AeDClZDEh7xcBKO_A5YW1C4IxQ6B_gCrEq0LYyz4beBwPyhpdm5vCJHu3h2wVaUlIgkQNUuEhr1dDgRLXFISL_p68IneGSKkuzXmEGWln3P7NwiEUB8PyUPQZXdHJGji0YQwqmgGIq9ECA1owr3VpUCHS4IiW6LUoO20L8tzaCgYKAVQSARESFQHGX2MiMHAjd17tYOMxykOBNF5ghQ0175';
+const gtoken = 'ya29.a0AeDClZAee2Jo5E7VXuy9Rt0AMrbvMepFFCBJqB3nKMqvt3LLyJO4mB25QDcDyUrRfelkNgY-Jo9QV-LUZCadEs2YWhsuWDsq6wnaL1x9MoMqxaJBM2tWxsy319TPD7TVDudwaGUjv-Qkqpi_7mtd2CFmkf3x6gL_0YavXHWXaCgYKAS8SARESFQHGX2MiU3EDyPEupgJ5lW3S7gb-9g0175';
 const clientId = "719533638212-nsi6gd0rgcpeb8opiq8emoqieq4bdh85.apps.googleusercontent.com";
 const clientSecret = "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"; // Set this in a .env file
 const redirectUri = "http://localhost:"+port+"/auth/google/callback"; // OAuth callback
 const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
-
 
 
 app.get('/Gclass/get_courses', (req, res) => {
@@ -46,19 +45,53 @@ app.get('/Gclass/get_courses', (req, res) => {
 
         apiResponse.on('end', () => {
             if (apiResponse.statusCode === 200) {
-
                 const courses = JSON.parse(data);
+                res.json(courses);
+            } else {
+                res.status(apiResponse.statusCode).json({
+                    message: 'Error retrieving courses',
+                    status: apiResponse.statusCode,
+                    error: data
+                });
+            }
+        });
+    });
 
+    apiRequest.on('error', error => {
+        res.status(500).json({ message: 'Error connecting to Google Classroom API', error: error.message });
+    });
+
+    apiRequest.end();
+});
+
+/*
+app.get('/Gclass/get_courses', (req, res) => {
+    const options = {
+        hostname: 'classroom.googleapis.com',
+        port: 443,
+        path: '/v1/courses',
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${req.query.gtoken}`
+        }
+    };
+
+    const apiRequest = https.request(options, apiResponse => {
+        let data = '';
+
+        apiResponse.on('data', chunk => {
+            data += chunk;
+        });
+
+        apiResponse.on('end', () => {
+            if (apiResponse.statusCode === 200) {
+                const courses = JSON.parse(data);
                 if (Array.isArray(courses.courses)) {
                     res.writeHead(200, {'Content-Type': 'text/html'});
                     res.write('<html><body><p>Student Courses:</p><ul>');
 
                     courses.courses.forEach(course => {
-                        if (course.name) {
-                            res.write(`<li>${course.name}</li>`);
-                        } else {
-                            res.write(`<li>Course ID: ${course.id} has no name available.</li>`);
-                        }
+                        res.write(`<li>${course.name || `Course ID: ${course.id} has no name`}</li>`);
                     });
 
                     res.write('</ul></body></html>');
@@ -75,15 +108,14 @@ app.get('/Gclass/get_courses', (req, res) => {
     });
 
     apiRequest.on('error', error => {
-        res.status(500).json({
-            message: 'Error connecting to Google Classroom API',
-            error: error.message
-        });
+        res.status(500).json({ message: 'Error connecting to Google Classroom API', error: error.message });
     });
 
-    apiRequest.end(); // Close the request properly
+    apiRequest.end();
 });
 
+
+ */
 app.get('/Gclass/get_grades', (req, res) => {
     res.status(200).json({
         message: 'Successfully Gclass/get_grades'

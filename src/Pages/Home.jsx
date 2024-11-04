@@ -8,9 +8,6 @@ const Home = () => {
         <p>
             <a href="http://localhost:3002/auth/google">Connect Google Classroom Account</a>
         </p>
-        <p>
-            <a href="http://localhost:3001/auth/canvase">Connect Canvas Account</a>
-        </p>
         </div>
     );
 };

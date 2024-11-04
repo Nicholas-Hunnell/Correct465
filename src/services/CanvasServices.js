@@ -1,4 +1,3 @@
-
 const express = require("express");
 const {MongoClient} = require("mongodb");
 const cors = require('cors')
@@ -259,6 +258,7 @@ app.get('/canvas/get_grades', (req, res) => {
 
     apiRequest.end(); // Close the request properly
 });
+
 
 
 //QUIZES
