@@ -4,6 +4,10 @@ const app = express();
 const port = 3003;
 const hostname = '127.0.0.1';
 
+
+const cors = require('cors')
+
+
 //mongo connection
 const uri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const client = new MongoClient(uri);
@@ -29,7 +33,8 @@ app.post('/user/create_user', async (req, res) => {
             FirstName: req.body.FirstName,
             LastName: req.body.LastName,
             CollegeName: req.body.CollegeName,
-            Email: req.body.Email
+            Email: req.body.Email,
+            Password:req.body.Password
         };
 
         const result = client.db("TeachersPet").collection("Users").insertOne(user);

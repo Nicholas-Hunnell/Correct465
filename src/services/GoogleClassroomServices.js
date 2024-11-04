@@ -10,16 +10,20 @@ const hostname = '127.0.0.1';
 //mongo connection
 const uri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const client = new MongoClient(uri);
+var clientId
 
 // Start the Express server
-app.listen(port, hostname, () => {
+app.listen(port, hostname, async () => {
     console.log(`Google Classroom services server running at http://${hostname}:${port}/`);
+    const clientId = client.db("TeachersPet").collection("GoogleClassroomAuthInformation").findOne({service:"googleClassroom"});
+    console.log(await clientId);
 });
 
 
 //Authentication
 const gtoken = 'ya29.a0AeDClZAee2Jo5E7VXuy9Rt0AMrbvMepFFCBJqB3nKMqvt3LLyJO4mB25QDcDyUrRfelkNgY-Jo9QV-LUZCadEs2YWhsuWDsq6wnaL1x9MoMqxaJBM2tWxsy319TPD7TVDudwaGUjv-Qkqpi_7mtd2CFmkf3x6gL_0YavXHWXaCgYKAS8SARESFQHGX2MiU3EDyPEupgJ5lW3S7gb-9g0175';
-const clientId = "719533638212-nsi6gd0rgcpeb8opiq8emoqieq4bdh85.apps.googleusercontent.com";
+//const clientId = "719533638212-nsi6gd0rgcpeb8opiq8emoqieq4bdh85.apps.googleusercontent.com";
+
 const clientSecret = "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"; // Set this in a .env file
 const redirectUri = "http://localhost:"+port+"/auth/google/callback"; // OAuth callback
 const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
@@ -174,13 +178,6 @@ app.get('/Gclass/login', (req, res) => {
 
     apiRequest.end(); // Close the request properly
 })
-
-
-
-//app.engine('html', require('ejs').renderFile);
-//app.set('view engine', 'html');
-
-//app.use(express.json({limit: '10kb'}));
 
 app.get("/auth/google", (req, res) => {
     const scopes = [
