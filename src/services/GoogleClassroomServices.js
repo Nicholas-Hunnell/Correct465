@@ -216,7 +216,6 @@ app.get("/auth/google/callback", async (req, res) => {
         )
         res.redirect("http://localhost:3000/");
 
-
     } catch (error) {
         console.error("Error exchanging code for tokens:", error);
         res.status(500).send("Authentication failed");
