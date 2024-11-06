@@ -1,25 +1,19 @@
-// src/App.js
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import Home from './Pages/Home.jsx';
-import Grades from './Pages/GradeDisplayPage.jsx'; // Assuming this is the correct path for your Grades component
+import Grades from './Pages/GradeDisplayPage.jsx';
+import CreateNewAccount from './Pages/CreateNewAccount.jsx';
+import LoginPage from './Pages/LoginPage.jsx'; 
 
 const App = () => {
     return (
         <Router>
-            <nav>
-                <ul>
-                    <li>
-                        <Link to="/">Home</Link>
-                    </li>
-                    <li>
-                        <Link to="/grades">Grades</Link>
-                    </li>
-                </ul>
-            </nav>
             <Routes>
-                <Route path="/" element={<Home />} /> {/* Pass component as JSX */}
-                <Route path="/grades" element={<Grades />} /> {/* Pass component as JSX */}
+                <Route path="/" element={<LoginPage />} /> {/* Default route for the login page */}
+                <Route path="/login" element={<LoginPage />} /> {/* Route for login */}
+                <Route path="/create-account" element={<CreateNewAccount />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/grades" element={<Grades />} />
             </Routes>
         </Router>
     );

@@ -34,12 +34,13 @@ app.post('/user/create_user', async (req, res) => {
             LastName: req.body.LastName,
             CollegeName: req.body.CollegeName,
             Email: req.body.Email,
-            Password:req.body.Password
+            Password:req.body.Password,
+            DashboardService: req.body.DashboardService
         };
 
         const result = client.db("TeachersPet").collection("Users").insertOne(user);
         res.status(201).json({
-            message: 'Successfully called user/create_user\nFirstName ' + user.FirstName
+            message: 'Successfully called user/create_user\nFirstName ' + user.FirstName + '\n' + 'Using ' + user.DashboardService
         });
     }
 });
