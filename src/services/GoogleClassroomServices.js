@@ -10,25 +10,182 @@ const hostname = '127.0.0.1';
 //mongo connection
 const uri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const client = new MongoClient(uri);
-var clientId
+//variables for oauth
+var clientId, googleClassroomSecrets, clientSecret, oAuth2Client, redirectUri;
 
 // Start the Express server
 app.listen(port, hostname, async () => {
     console.log(`Google Classroom services server running at http://${hostname}:${port}/`);
-    const clientId = client.db("TeachersPet").collection("GoogleClassroomAuthInformation").findOne({service:"googleClassroom"});
-    console.log(await clientId);
+
+    //get the google classroom oauth info from db
+    googleClassroomSecrets = await client.db("TeachersPet").collection("Secrets").findOne({service:"googleClassroom"});
+    clientId = await googleClassroomSecrets.clientId;
+    clientSecret = await googleClassroomSecrets.clientSecret;
+    redirectUri = "http://localhost:"+port+"/auth/google/callback"; // OAuth callback
+    oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
 });
 
 
 //Authentication
 const gtoken = 'ya29.a0AeDClZAee2Jo5E7VXuy9Rt0AMrbvMepFFCBJqB3nKMqvt3LLyJO4mB25QDcDyUrRfelkNgY-Jo9QV-LUZCadEs2YWhsuWDsq6wnaL1x9MoMqxaJBM2tWxsy319TPD7TVDudwaGUjv-Qkqpi_7mtd2CFmkf3x6gL_0YavXHWXaCgYKAS8SARESFQHGX2MiU3EDyPEupgJ5lW3S7gb-9g0175';
-//const clientId = "719533638212-nsi6gd0rgcpeb8opiq8emoqieq4bdh85.apps.googleusercontent.com";
-
-const clientSecret = "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"; // Set this in a .env file
-const redirectUri = "http://localhost:"+port+"/auth/google/callback"; // OAuth callback
-const oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
 
 
+app.get('/Gclass/get_overall_grades', (req, res) => {
+    // Step 1: Define options for getting the list of courses
+    const courseOptions = {
+        hostname: 'classroom.googleapis.com',
+        port: 443,
+        path: '/v1/courses?courseStates=ACTIVE',
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${gtoken}`
+        }
+    };
+
+    const courseRequest = https.request(courseOptions, courseResponse => {
+        let courseData = '';
+
+        courseResponse.on('data', chunk => {
+            courseData += chunk;
+        });
+
+        courseResponse.on('end', () => {
+            if (courseResponse.statusCode === 200) {
+                const courses = JSON.parse(courseData).courses || [];
+                if (courses.length === 0) {
+                    res.json({ message: 'No courses found.' });
+                    return;
+                }
+
+                const overallGrades = [];
+                let coursesProcessed = 0;
+
+                courses.forEach(course => {
+                    const courseId = course.id;
+                    const courseName = course.name;
+
+                    // Step 2: Define options for getting coursework for each course
+                    const courseworkOptions = {
+                        hostname: 'classroom.googleapis.com',
+                        port: 443,
+                        path: `/v1/courses/${courseId}/courseWork`,
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${gtoken}`
+                        }
+                    };
+
+                    const courseworkRequest = https.request(courseworkOptions, courseworkResponse => {
+                        let courseworkData = '';
+
+                        courseworkResponse.on('data', chunk => {
+                            courseworkData += chunk;
+                        });
+
+                        courseworkResponse.on('end', () => {
+                            if (courseworkResponse.statusCode === 200) {
+                                const courseWork = JSON.parse(courseworkData).courseWork || [];
+                                let totalScore = 0;
+                                let totalMaxPoints = 0;
+                                let courseworkProcessed = 0;
+
+                                if (courseWork.length === 0) {
+                                    overallGrades.push({ course: courseName, overallGrade: 'N/A' });
+                                    coursesProcessed++;
+                                    if (coursesProcessed === courses.length) {
+                                        res.json(overallGrades);
+                                    }
+                                    return;
+                                }
+
+                                courseWork.forEach(work => {
+                                    const courseWorkId = work.id;
+                                    const maxPoints = work.maxPoints || 0;
+
+                                    // Step 3: Define options for getting student submissions for each coursework
+                                    const submissionOptions = {
+                                        hostname: 'classroom.googleapis.com',
+                                        port: 443,
+                                        path: `/v1/courses/${courseId}/courseWork/${courseWorkId}/studentSubmissions`,
+                                        method: 'GET',
+                                        headers: {
+                                            'Authorization': `Bearer ${gtoken}`
+                                        }
+                                    };
+
+                                    const submissionRequest = https.request(submissionOptions, submissionResponse => {
+                                        let submissionData = '';
+
+                                        submissionResponse.on('data', chunk => {
+                                            submissionData += chunk;
+                                        });
+
+                                        submissionResponse.on('end', () => {
+                                            if (submissionResponse.statusCode === 200) {
+                                                const studentSubmissions = JSON.parse(submissionData).studentSubmissions || [];
+
+                                                studentSubmissions.forEach(submission => {
+                                                    if (submission.assignedGrade !== undefined) {
+                                                        totalScore += submission.assignedGrade;
+                                                        totalMaxPoints += maxPoints;
+                                                    }
+                                                });
+
+                                                courseworkProcessed++;
+                                                if (courseworkProcessed === courseWork.length) {
+                                                    const overallGrade = totalMaxPoints > 0 ? (totalScore / totalMaxPoints) * 100 : 'N/A';
+                                                    overallGrades.push({ course: courseName, overallGrade: overallGrade.toFixed(2) + '%' });
+                                                    coursesProcessed++;
+                                                    if (coursesProcessed === courses.length) {
+                                                        res.json(overallGrades);
+                                                    }
+                                                }
+                                            } else {
+                                                res.status(submissionResponse.statusCode).json({
+                                                    message: `Error retrieving submissions for coursework ${courseWorkId}`,
+                                                    error: submissionData
+                                                });
+                                            }
+                                        });
+                                    });
+
+                                    submissionRequest.on('error', error => {
+                                        res.status(500).json({ message: 'Error connecting to Google Classroom API for submissions', error: error.message });
+                                    });
+
+                                    submissionRequest.end();
+                                });
+                            } else {
+                                res.status(courseworkResponse.statusCode).json({
+                                    message: `Error retrieving coursework for course ${courseId}`,
+                                    error: courseworkData
+                                });
+                            }
+                        });
+                    });
+
+                    courseworkRequest.on('error', error => {
+                        res.status(500).json({ message: 'Error connecting to Google Classroom API for coursework', error: error.message });
+                    });
+
+                    courseworkRequest.end();
+                });
+            } else {
+                res.status(courseResponse.statusCode).json({
+                    message: 'Error retrieving courses',
+                    error: courseData
+                });
+            }
+        });
+    });
+
+    courseRequest.on('error', error => {
+        res.status(500).json({ message: 'Error connecting to Google Classroom API for courses', error: error.message });
+    });
+
+    courseRequest.end();
+});
+/*
 app.get('/Gclass/get_courses', (req, res) => {
     const options = {
         hostname: 'classroom.googleapis.com',
@@ -67,6 +224,8 @@ app.get('/Gclass/get_courses', (req, res) => {
 
     apiRequest.end();
 });
+
+*/
 
 /*
 app.get('/Gclass/get_courses', (req, res) => {
@@ -120,10 +279,58 @@ app.get('/Gclass/get_courses', (req, res) => {
 
 
  */
-app.get('/Gclass/get_grades', (req, res) => {
+app.get('/Gclass/get_grades', async (req, res) => {
     res.status(200).json({
         message: 'Successfully Gclass/get_grades'
     });
+
+    try {
+        // Step 1: Get list of courses
+        const coursesUrl = 'https://classroom.googleapis.com/v1/courses?courseStates=ACTIVE';
+        const coursesData = await httpsGet(coursesUrl);
+        const courses = coursesData.courses || [];
+
+        if (courses.length === 0) {
+            console.log('No courses found.');
+            return;
+        }
+
+        // Step 2: For each course, get coursework and calculate grades
+        for (const course of courses) {
+            const courseId = course.id;
+            const courseworkUrl = `https://classroom.googleapis.com/v1/courses/${courseId}/courseWork`;
+            const courseworkData = await httpsGet(courseworkUrl);
+            const courseWork = courseworkData.courseWork || [];
+
+            let totalScore = 0;
+            let totalMaxPoints = 0;
+
+            // Step 3: Iterate through each coursework to get grades
+            for (const work of courseWork) {
+                const courseWorkId = work.id;
+                const maxPoints = work.maxPoints || 0;
+
+                const submissionsUrl = `https://classroom.googleapis.com/v1/courses/${courseId}/courseWork/${courseWorkId}/studentSubmissions`;
+                const submissionsData = await httpsGet(submissionsUrl);
+                const studentSubmissions = submissionsData.studentSubmissions || [];
+
+                // Calculate total score and max points
+                for (const submission of studentSubmissions) {
+                    if (submission.assignedGrade !== undefined) {
+                        totalScore += submission.assignedGrade;
+                        totalMaxPoints += maxPoints;
+                    }
+                }
+            }
+
+            // Calculate and display the overall grade
+            const overallGrade = totalMaxPoints > 0 ? (totalScore / totalMaxPoints) * 100 : null;
+            console.log(`Course: ${course.name}, Overall Grade: ${overallGrade ? overallGrade.toFixed(2) + '%' : 'N/A'}`);
+        }
+    } catch (error) {
+        console.error('Error retrieving grades:', error);
+    }
+
 });
 
 app.get('/Gclass/get_account_info', (req, res) => {
@@ -218,3 +425,9 @@ app.get("/auth/google/callback", async (req, res) => {
         res.status(500).send("Authentication failed");
     }
 });
+
+async function checkAuth(){
+
+
+
+}
