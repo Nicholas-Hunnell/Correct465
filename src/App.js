@@ -4,7 +4,8 @@ import Home from './Pages/Home.jsx';
 import Grades from './Pages/GradeDisplayPage.jsx';
 import CreateNewAccount from './Pages/CreateNewAccount.jsx';
 import LoginPage from './Pages/LoginPage.jsx'; 
-
+import CanvasPage from './Pages/LoginPageCanvas.jsx';
+import GooglePage from './Pages/LoginPageGoogle.jsx';
 const App = () => {
     return (
         <Router>
@@ -14,6 +15,8 @@ const App = () => {
                 <Route path="/create-account" element={<CreateNewAccount />} />
                 <Route path="/home" element={<Home />} />
                 <Route path="/grades" element={<Grades />} />
+                <Route path="/CanvasLogIn" element={<CanvasPage />} />
+                <Route path = "/GoogleLogIn" element={<GooglePage />}  />
             </Routes>
         </Router>
     );
