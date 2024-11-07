@@ -1,12 +1,12 @@
 const express = require("express");
 const {MongoClient} = require("mongodb");
 const app = express();
+app.use(express.json());
 const port = 3003;
 const hostname = '127.0.0.1';
 
-
-const cors = require('cors')
-
+const cors = require("cors");
+app.use(cors());
 
 //mongo connection
 const uri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";

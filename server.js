@@ -1,4 +1,3 @@
-
 const express = require('express');
 const {MongoClient} = require("mongodb");
 const app = express();
@@ -19,14 +18,11 @@ const client = new MongoClient(uri);
 //collin token: 1050~VfGck36h7t3YHBfLx8nmWDQKJEzN4Yukn3KfNYh68eYDvzVGWe6aVfCxJYZ4E8DX
 const token = '1050~VfGck36h7t3YHBfLx8nmWDQKJEzN4Yukn3KfNYh68eYDvzVGWe6aVfCxJYZ4E8DX'
 const gtoken = 'ya29.a0AeDClZDEh7xcBKO_A5YW1C4IxQ6B_gCrEq0LYyz4beBwPyhpdm5vCJHu3h2wVaUlIgkQNUuEhr1dDgRLXFISL_p68IneGSKkuzXmEGWln3P7NwiEUB8PyUPQZXdHJGji0YQwqmgGIq9ECA1owr3VpUCHS4IiW6LUoO20L8tzaCgYKAVQSARESFQHGX2MiMHAjd17tYOMxykOBNF5ghQ0175';
-//const token = '1050~EZhEtyeWBEA6kWeunCVDv3VZmCEn8PDt93rQKafFNC3QWPFEExeWkmCTaC9xM3kT';
 const canvasHost = 'psu.instructure.com';
 const https = require('https');
 
-const corsOptions = {
-    origin: 'http://localhost:3000'
-};
-app.use(cors(corsOptions))
+
+app.use(cors());
 //////////////////////////////////////////////   User Accounts   //////////////////////////////////////
 //app.use(express.json({limit: '10kb'}));
 
@@ -42,8 +38,12 @@ const googleClassroom = spawn('node', ['./src/services/GoogleClassroomServices.j
 const canvas = spawn('node', ['./src/services/CanvasServices.js'], {
     stdio: 'inherit' // Inherit the parent's stdio
 });
+const user = spawn('node', ['./src/services/UserServices.js'], {
+    stdio: 'inherit' // Inherit the parent's stdio
+});
 
-
+//// OLD HOME PAGE
+/*
 app.get('/', (req, res) => {
     res.writeHead(200, {'Content-Type': 'text/html'})
     res.write(
@@ -98,6 +98,8 @@ app.get('/', (req, res) => {
     );
     res.end();
 });
+
+ */
 
 app.post('/user/create_user', async (req, res) => {
 

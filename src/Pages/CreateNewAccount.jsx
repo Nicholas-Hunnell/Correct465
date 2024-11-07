@@ -23,14 +23,14 @@ function CreateNewAccount() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://127.0.0.1:5000/user/create_user', {
+            const response = await fetch('http://127.0.0.1:3003/user/create_user', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'mode': 'no-cors'
                 },
                 body: JSON.stringify(formData)
             });
-
             const result = await response.json();
             if (response.ok) {
                 alert(result.message);
