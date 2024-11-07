@@ -31,7 +31,7 @@ async function updateAwardCategory(userId, awardId) {
 // Helper function to call the Canvas grades API
 async function fetchCanvasGrades() {
     try {
-        const response = await axios.get('http://127.0.0.1:3000/canvas/get_grades');
+        const response = await axios.get('http://127.0.0.1:3001/canvas/get_grades');
         const data = response.data;
         
         // Check if any course has an "A" grade based on your API structure
@@ -46,7 +46,7 @@ async function fetchCanvasGrades() {
 // Helper function to call the Google Classroom grades API
 async function fetchGoogleClassroomGrades() {
     try {
-        const response = await axios.get('http://127.0.0.1:3000/Gclass/get_grades');
+        const response = await axios.get('http://127.0.0.1:3002/Gclass/get_grades');
         const data = response.data;
         
         // Assuming grades are returned similarly to Canvas in a format where "Grade: A" exists
