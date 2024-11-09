@@ -1,6 +1,7 @@
 const express = require("express");
 const {MongoClient} = require("mongodb");
 const app = express();
+const bcrypt = require("bcrypt");
 app.use(express.json());
 const port = 3003; //3003
 const hostname = '127.0.0.1';
@@ -114,6 +115,34 @@ app.get('/user/get_id_by_email', async (req, res) => {
         });
     }
 });
+
+//login function used in LoginPage.jsx
+app.post('/user/login', async (req, res) => {
+    try {
+        const {Email, Password} = req.body;
+        const user = await client.db("TeachersPet").collection("Users").findOne({Email});
+
+        if (!user) {
+            return res.status(404).json({message: "User does not exist in the database"});
+
+        }
+
+        if (Password!== user.Password) {
+            return res.status(401).json({message: "Password is incorrect"});
+        }
+
+        res.status(200).json({
+            message: "Login Successful",
+            user: {id: user._id, email: user.Email, firstName: user.FirstName}
+        });
+
+
+    } catch(error){
+        res.status(500).json({message: "Error with login", error: error.message});
+    }
+});
+
+
 
 app.post('/user/update_last_login', async (req, res) => {
     const result = await client.db("TeachersPet").collection("LastLogin").updateOne(
