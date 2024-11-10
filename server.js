@@ -1,5 +1,6 @@
 const express = require('express');
 const {MongoClient} = require("mongodb");
+const axios = require('axios');
 const app = express();
 app.use(express.json());
 const cors = require('cors')
@@ -7,7 +8,7 @@ const port = 5000;
 const hostname = '127.0.0.1';
 const OpenAI = require("openai");
 
-const apiKey = '';
+const apiKey = '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';
 
 const openai = new OpenAI({
     apiKey: apiKey,
@@ -926,3 +927,117 @@ app.post('/chatgpt/get_study_tools', async (req, res) => {
         });
     }
 });
+
+//////////////////////////////Award////////////////////////////////////
+
+async function fetchCanvasGrades() {
+    try {
+        const response = await axios.get('http://127.0.0.1:3001/canvas/get_grades');
+        const data = response.data; // Access the full response object
+
+        // Ensure data.grades exists and is an array
+        if (data.grades && Array.isArray(data.grades)) {
+            console.log("Canvas Grades:", data.grades); // Log data for debugging
+
+            // Find the last course with a valid grade (not "No grade available")
+            const lastValidGradeEntry = [...data.grades].reverse().find(gradeEntry => !gradeEntry.includes("Grades: No grade available"));
+
+            if (lastValidGradeEntry) {
+                console.log("Last valid grade entry:", lastValidGradeEntry);
+                // Check if the last valid grade entry has a grade of "A"
+                return lastValidGradeEntry.includes("Grades: B-");
+            } else {
+                console.log("No valid grades found in Canvas data.");
+                return false;
+            }
+        } else {
+            console.error("Grades data is not in the expected format for Canvas.");
+            return false;
+        }
+    } catch (error) {
+        console.error("Error fetching Canvas grades:", error.message);
+        throw error;
+    }
+}
+
+async function updateAwardCategory(email, awardId) {
+    try {
+        const collection = client.db("TeachersPet").collection("UserAwards");
+
+        // Update the award category based on the user's email
+        const result = await collection.updateOne(
+            { Email: email, AwardId: awardId },
+            { $set: { Category: 1 } },
+            { upsert: true }
+        );
+
+        return result;
+    } catch (error) {
+        console.error("Error updating award category:", error);
+        throw error;
+    }
+}
+
+app.post('/award/update', async (req, res) => {
+    const { email, awardId } = req.body;
+
+    if (!email || !awardId) {
+        return res.status(400).json({
+            message: 'Error: Missing email or awardId in the request.'
+        });
+    }
+
+    try {
+        // Fetch grades from both Canvas and Google Classroom
+        const canvasHasA = await fetchCanvasGrades();
+
+        // If an "A" grade is found, update the award category in MongoDB
+        if (canvasHasA) {
+            const result = await updateAwardCategory(email, awardId);
+            if (result.modifiedCount > 0 || result.upsertedCount > 0) {
+                res.status(200).json({ message: "Award category updated successfully." });
+            } else {
+                res.status(500).json({ message: "Failed to update award category." });
+            }
+        } else {
+            res.status(200).json({ message: "No 'A' grade found; no update made." });
+        }
+    } catch (error) {
+        console.error("Error updating award category:", error);
+        res.status(500).json({ message: "Error updating award category", error: error.message });
+    }
+});
+
+
+////////////////////////////////////////// Gemini ///////////////////////////////////////////////////
+// const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// const genAI = new GoogleGenerativeAI("AIzaSyCdElodEb45ed2J-oqoWjiYbSnn69ecW84");
+
+// app.post('/generate-content', async (req, res) => {
+//     const { prompt } = req.body;
+
+//     if (!prompt) {
+//         return res.status(400).json({
+//             message: 'Error: Missing prompt in the request.'
+//         });
+//     }
+
+//     try {
+//         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+//         const result = await model.generateContent(prompt);
+
+//         // Send the generated response back to the client
+//         res.status(200).json({
+//             message: 'Successfully generated content.',
+//             response: result.response.text()
+//         });
+//     } catch (error) {
+//         console.error('Error generating content:', error.message);
+//         res.status(500).json({
+//             message: 'Error generating content',
+//             error: error.message
+//         });
+//     }
+// });
+// console.log(result.response.text());
