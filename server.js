@@ -9,7 +9,7 @@ const OpenAI = require("openai");
 
 // Initialize the OpenAI API with the provided API key
 const openai = new OpenAI({
-    apiKey: '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',
+    apiKey: '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',
 });
 
 
