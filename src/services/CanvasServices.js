@@ -660,7 +660,6 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpmn/:userId', (req, res)
 app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm/:userId', (req, res) => {
     const userId = req.params.userId;
 
-    // Step 1: Get all course IDs for the user
     const courseOptions = {
         hostname: canvasHost,
         port: 443,
@@ -684,7 +683,7 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm/:userId', (req, res) 
                 const courses = JSON.parse(courseData);
                 const assignmentsPromises = [];
 
-                // Step 2: Create promises to get assignments for each course
+
                 courses.forEach(course => {
                     if (course.id) {
                         const assignmentOptions = {
@@ -752,7 +751,7 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm/:userId', (req, res) 
                                 }
 
                                 assignmentsWithGrades.push({
-                                    courseName: assignment.course_name, // Make sure the course name is included in the response
+                                    courseName: assignment.course_name,
                                     assignmentName: assignment.name,
                                     grade: letterGrade,
                                     score: score,
@@ -761,7 +760,7 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm/:userId', (req, res) 
                             });
                         });
 
-                        // Return the assignments in a structured JSON format
+
                         res.status(200).json({
                             userId: userId,
                             assignments: assignmentsWithGrades
@@ -791,6 +790,6 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm/:userId', (req, res) 
         });
     });
 
-    courseRequest.end(); // Close the request properly
+    courseRequest.end();
 });
 

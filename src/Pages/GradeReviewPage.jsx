@@ -73,7 +73,6 @@ const AssignmentsPage = () => {
                 ) : (
                     assignments.map((assignment, index) => (
                         <tr key={index}>
-                            <td>{assignment.courseName || 'N/A'}</td>
                             <td>{assignment.assignmentName}</td>
                             <td>{assignment.grade}</td>
                             <td>{assignment.score !== null ? assignment.score : 'Not graded'}</td>
