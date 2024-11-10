@@ -49,6 +49,9 @@ const user = spawn('node', ['./src/services/UserServices.js'], {
 const GradeHelp = spawn('node', ['./src/services/GradeHelpServices.js'], {
     stdio: 'inherit' // Inherit the parent's stdio
 });
+const Award = spawn('node', ['./src/services/UserAward.js'], {
+    stdio: 'inherit' // Inherit the parent's stdio
+});
 
 //// OLD HOME PAGE
 /*
