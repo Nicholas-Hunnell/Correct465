@@ -7,9 +7,10 @@ const port = 5000;
 const hostname = '127.0.0.1';
 const OpenAI = require("openai");
 
-// Initialize the OpenAI API with the provided API key
+const apiKey = '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';
+
 const openai = new OpenAI({
-    apiKey: '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',
+    apiKey: apiKey,
 });
 
 
