@@ -31,7 +31,7 @@ const GradesDisplay = () => {
     if (error) {
         return <p>Error fetching grades: {error}</p>;
     }
-
+//test
     return (
         <div>
             <h2>Student Grades</h2>
