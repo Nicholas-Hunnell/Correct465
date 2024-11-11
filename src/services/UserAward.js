@@ -58,18 +58,36 @@ async function fetchGoogleClassroomGrades() {
     }
 }
 
-// Endpoint to check grades and update award category if applicable
 app.post('/award/update', async (req, res) => {
-    const { userId, awardId } = req.body;
+    const { email, awardId } = req.body;
 
     try {
-        // Fetch grades from both Canvas and Google Classroom
+        // Connect to MongoDB
+        await client.connect();
+        const usersCollection = client.db("TeachersPet").collection("Users");
+        const awardsCollection = client.db("TeachersPet").collection("UserAwards");
+
+        // Find the user by email (or modify to use another identifier if needed)
+        const user = await usersCollection.findOne({ Email: email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // Extract the UserId
+        const userId = user._id.toString();
+
+        // Check grades and update the award category if applicable
         const canvasHasA = await fetchCanvasGrades();
         const googleClassroomHasA = await fetchGoogleClassroomGrades();
 
-        // If "A" grade is found, update MongoDB
         if (canvasHasA || googleClassroomHasA) {
-            const result = await updateAwardCategory(userId, awardId);
+            const result = await awardsCollection.updateOne(
+                { UserId: userId, AwardId: awardId },
+                { $set: { Category: 1 } },
+                { upsert: true }
+            );
+
             if (result.modifiedCount > 0 || result.upsertedCount > 0) {
                 res.status(200).json({ message: "Award category updated successfully." });
             } else {
@@ -81,8 +99,11 @@ app.post('/award/update', async (req, res) => {
     } catch (error) {
         console.error("Error updating award category:", error);
         res.status(500).json({ message: "Error updating award category", error: error.message });
+    } finally {
+        await client.close();
     }
 });
+
 
 const port = 3000;
 app.listen(port, () => {
