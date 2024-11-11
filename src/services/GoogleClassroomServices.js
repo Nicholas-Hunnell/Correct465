@@ -1,8 +1,13 @@
+
 const express = require("express");
-const {MongoClient} = require("mongodb");
+const {MongoClient, ObjectId} = require("mongodb");
 const app = express();
+app.use(express.json());
 const https = require('https');
 const { OAuth2Client } = require("google-auth-library");
+const react = require('react');
+const { useState } = require('react');
+const {Link, useNavigate} = require("react-router-dom");
 
 const port = 3002;
 const hostname = '127.0.0.1';
@@ -21,16 +26,16 @@ app.listen(port, hostname, async () => {
     googleClassroomSecrets = await client.db("TeachersPet").collection("Secrets").findOne({service:"googleClassroom"});
     clientId = await googleClassroomSecrets.clientId;
     clientSecret = await googleClassroomSecrets.clientSecret;
-    redirectUri = "http://localhost:"+port+"/auth/google/callback"; // OAuth callback
+    redirectUri = "http://localhost:"+port+"/auth/googleCallback"; // OAuth callback
     oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
 });
 
 
 //Authentication
-const gtoken = 'ya29.a0AeDClZAee2Jo5E7VXuy9Rt0AMrbvMepFFCBJqB3nKMqvt3LLyJO4mB25QDcDyUrRfelkNgY-Jo9QV-LUZCadEs2YWhsuWDsq6wnaL1x9MoMqxaJBM2tWxsy319TPD7TVDudwaGUjv-Qkqpi_7mtd2CFmkf3x6gL_0YavXHWXaCgYKAS8SARESFQHGX2MiU3EDyPEupgJ5lW3S7gb-9g0175';
+const gtoken = 'ya29.a0AeDClZCkM0DBxkL7jYgv-wuKMliqEIksl76fT5lXz720ETdJI5-NogbZJ3NAz-Usg0urOv0JhntqJfJ3FAo66duQiIyfbzKnUsEvj6PcWtXoWk9-kCqNnRvjxaHdYJ_whG_PBcojCGGS_VccrCQOftNU8isWUVhMGPWX60iCaCgYKAe4SARESFQHGX2MiNSVMZtQKfFkfiZXuTXXWUQ0175';
 
 
-app.get('/Gclass/get_overall_grades', (req, res) => {
+app.get('/Gclass/get_overall_grades', async (req, res) => {
     // Step 1: Define options for getting the list of courses
     const courseOptions = {
         hostname: 'classroom.googleapis.com',
@@ -156,7 +161,7 @@ app.get('/Gclass/get_overall_grades', (req, res) => {
                                     submissionRequest.end();
                                 });
                             } else {
-                                res.status(courseworkResponse.statusCode).json({
+                                res.status(500).json({
                                     message: `Error retrieving coursework for course ${courseId}`,
                                     error: courseworkData
                                 });
@@ -176,6 +181,7 @@ app.get('/Gclass/get_overall_grades', (req, res) => {
                     error: courseData
                 });
             }
+
         });
     });
 
@@ -185,7 +191,7 @@ app.get('/Gclass/get_overall_grades', (req, res) => {
 
     courseRequest.end();
 });
-/*
+
 app.get('/Gclass/get_courses', (req, res) => {
     const options = {
         hostname: 'classroom.googleapis.com',
@@ -225,7 +231,7 @@ app.get('/Gclass/get_courses', (req, res) => {
     apiRequest.end();
 });
 
-*/
+
 
 /*
 app.get('/Gclass/get_courses', (req, res) => {
@@ -363,7 +369,11 @@ app.get('/Gclass/login', (req, res) => {
 
         apiResponse.on('end', () => {
             if (apiResponse.statusCode === 200) {
+                const user = {
+                    _id: ObjectId.createFromHexString(req.body.userId)
+                };
 
+                const result = client.db("TeachersPet").collection("tokens").insertOne(user);
                 res.write('<html><body><p>Authorized!! Your token is in the database.</p></body></html>')
                 res.end();
             } else {
@@ -386,10 +396,15 @@ app.get('/Gclass/login', (req, res) => {
     apiRequest.end(); // Close the request properly
 })
 
-app.get("/auth/google", (req, res) => {
+
+var loggedInUser = "";
+app.get("/auth/google/:userId", async (req, res) => {
+    loggedInUser = req.params.userId;
+
     const scopes = [
         "https://www.googleapis.com/auth/classroom.courses.readonly",
-        "https://www.googleapis.com/auth/classroom.rosters.readonly"
+        "https://www.googleapis.com/auth/classroom.rosters.readonly",
+        "https://www.googleapis.com/auth/classroom.coursework.students.readonly"
     ];
 
     const authUrl = oAuth2Client.generateAuthUrl({
@@ -400,7 +415,9 @@ app.get("/auth/google", (req, res) => {
     res.redirect(authUrl);
 })
 
-app.get("/auth/google/callback", async (req, res) => {
+
+
+app.get("/auth/googleCallback", async (req, res) => {
     const code = req.query.code;
 
     if (!code) {
@@ -412,19 +429,50 @@ app.get("/auth/google/callback", async (req, res) => {
         const { tokens } = await oAuth2Client.getToken(code);
         oAuth2Client.setCredentials(tokens);
 
+        var loggedInUserId = await ObjectId.createFromHexString(loggedInUser);
         // Store token in MongoDB
+        const oldUser = await client.db("TeachersPet").collection("Users").findOne({_id: loggedInUserId});
+        console.log(oldUser)
+        oldUser.googleClassroomToken = tokens.access_token;
+
+        const result = await client.db("TeachersPet").collection("Users").updateOne({_id: loggedInUserId}, { $set: oldUser});
+        if(!result) {
+            res.status(400).json({
+                message: 'Error connecting to the database'
+            })
+        }
         console.log(
             "Token: "+tokens.access_token+"\n"+
             "Refresh token: "+tokens.refresh_token+"\n"+
             "Expiry date: "+tokens.expiry_date
         )
-        res.redirect("http://localhost:3000/");
+        const navigate = useNavigate();
+        navigate('/home', {state: {user: oldUser}});
+        res.status(200).send("Authentication successfull");
 
     } catch (error) {
         console.error("Error exchanging code for tokens:", error);
         res.status(500).send("Authentication failed");
     }
 });
+
+app.get("/auth/google/getUserAuthToken", async (req, res) => {
+    const userId = await ObjectId.createFromHexString(req.body.id);
+    const result = await client.db("TeachersPet").collection("tokens").findOne({_id: userId});
+
+    if(!result) {
+        res.status(500).json({
+            message: 'Error: No token could be found for that user.'
+        });
+    }
+    else{
+        console.log(result);
+        res.json({
+            access_token: result.access_token
+        });
+    }
+
+})
 
 async function checkAuth(){
 

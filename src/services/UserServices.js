@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 app.use(express.json());
 const port = 3003; //3003
 const hostname = '127.0.0.1';
+const ObjectId = require('mongodb').ObjectId;
 
 const cors = require("cors");
 app.use(cors());
@@ -46,10 +47,36 @@ app.post('/user/create_user', async (req, res) => {
     }
 });
 
-app.post('/user/modify_user', (req, res) => {
-    res.status(201).json({
-        message: 'Successfully called user/modify_user'
-    });
+app.post('/user/modify_user', async (req, res) => {
+    const userId = await ObjectId.createFromHexString(req.body.id);
+
+    try {
+        const oldUserResponse = await fetch('http://127.0.0.1:3003/user/get_user_by_ID', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: {'id': req.body.id}
+        });
+        var oldUser = await oldUserResponse.json();
+        console.log(await oldUser);
+        oldUser.FirstName = (req.body.FirstName) ? req.body.FirstName : oldUser.FirstName;
+        oldUser.LastName = (req.body.LastName) ? req.body.LastName : oldUser.LastName;
+        oldUser.CollegeName = (req.body.CollegeName) ? req.body.CollegeName : oldUser.CollegeName;
+        oldUser.Email = (req.body.Email) ? req.body.Email : oldUser.Email;
+        oldUser.Password = (req.body.Password) ? req.body.Password : oldUser.Password;
+        oldUser.DashboardService = (req.body.DashboardService) ? req.body.DashboardService : oldUser.DashboardService;
+
+        const result = await client.db("TeachersPet").collection("Users").updateOne({_id: userId}, {$set, oldUser});
+
+        res.status(200).json({
+            message: 'Successfully modified user'
+        });
+    } catch (e) {
+        res.status(200).json({
+            message: 'Error: no user with that ID'
+        });
+    }
 });
 
 app.delete('/user/delete_user', async (req, res) => {
@@ -57,6 +84,7 @@ app.delete('/user/delete_user', async (req, res) => {
 
     if (result) {
         const result = await client.db("TeachersPet").collection("Users").deleteOne({"Email": req.body.Email});
+
         res.status(200).json({
             message: 'Successfully deleted user ' + req.body.Email
         });
@@ -68,18 +96,21 @@ app.delete('/user/delete_user', async (req, res) => {
 });
 
 app.get('/user/get_user_by_ID', async (req, res) => {
-    const userId = ObjectId.createFromHexString(req.body._id);
+    const userId = await ObjectId.createFromHexString(req.body.id);
     const result = await client.db("TeachersPet").collection("Users").find({_id: userId});
 
     const resultArr = await result.toArray();
 
-    if (resultArr[0].Email != null) {
+    console.log("Called get_user_by_ID");
+
+    try{
+        var userEmail = resultArr[0].Email;
         console.log(resultArr);
         res.status(200).json({
             message: 'User info: ' + JSON.stringify(resultArr[0]),
             user: resultArr[0]
         });
-    } else {
+    } catch (e) {
         res.status(200).json({
             message: 'Error: no user with that ID'
         });
@@ -124,7 +155,6 @@ app.post('/user/login', async (req, res) => {
 
         if (!user) {
             return res.status(404).json({message: "User does not exist in the database"});
-
         }
 
         if (Password!== user.Password) {
