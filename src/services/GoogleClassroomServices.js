@@ -32,7 +32,7 @@ app.listen(port, hostname, async () => {
 
 
 //Authentication
-const gtoken = 'ya29.a0AeDClZCkM0DBxkL7jYgv-wuKMliqEIksl76fT5lXz720ETdJI5-NogbZJ3NAz-Usg0urOv0JhntqJfJ3FAo66duQiIyfbzKnUsEvj6PcWtXoWk9-kCqNnRvjxaHdYJ_whG_PBcojCGGS_VccrCQOftNU8isWUVhMGPWX60iCaCgYKAe4SARESFQHGX2MiNSVMZtQKfFkfiZXuTXXWUQ0175';
+const gtoken = "";// = 'ya29.a0AeDClZCkM0DBxkL7jYgv-wuKMliqEIksl76fT5lXz720ETdJI5-NogbZJ3NAz-Usg0urOv0JhntqJfJ3FAo66duQiIyfbzKnUsEvj6PcWtXoWk9-kCqNnRvjxaHdYJ_whG_PBcojCGGS_VccrCQOftNU8isWUVhMGPWX60iCaCgYKAe4SARESFQHGX2MiNSVMZtQKfFkfiZXuTXXWUQ0175';
 
 
 app.get('/Gclass/get_overall_grades', async (req, res) => {
