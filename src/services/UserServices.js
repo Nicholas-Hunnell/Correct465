@@ -38,7 +38,7 @@ app.post('/user/create_user', async (req, res) => {
             Email: req.body.Email,
             Password:req.body.Password,
             DashboardService: req.body.DashboardService,
-            ...(req.body.CanvasToken && { CanvasToken: req.body.CanvasToken })
+            ...(req.body.CanvasToken && { Token: req.body.CanvasToken })
         };
 
         const result = client.db("TeachersPet").collection("Users").insertOne(user);
@@ -161,10 +161,10 @@ app.post('/user/login', async (req, res) => {
         if (Password!== user.Password) {
             return res.status(401).json({message: "Password is incorrect"});
         }
-
+        req.session.user = {id: user._id, email: user.Email, firstName: user.FirstName, token:user.Token};
         res.status(200).json({
             message: "Login Successful",
-            user: {id: user._id, email: user.Email, firstName: user.FirstName}
+            user: {id: user._id, email: user.Email, firstName: user.FirstName, token:user.Token}
         });
 
 

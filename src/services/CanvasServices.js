@@ -12,13 +12,16 @@ const corsOptions = {
 };
 app.use(cors(corsOptions))
 
+const user = req.session.user;
+
+
 //mongo connection
 const uri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const client = new MongoClient(uri);
 
 //local variables
 const canvasHost = 'psu.instructure.com';
-const token = '1050~VfGck36h7t3YHBfLx8nmWDQKJEzN4Yukn3KfNYh68eYDvzVGWe6aVfCxJYZ4E8DX'; //this is the user generated token
+const token = user.Token; //this is the user generated token
 
 // Start the Express server
 app.listen(port, hostname, () => {
