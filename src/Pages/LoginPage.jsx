@@ -17,7 +17,7 @@ function LoginPage() {
             const data = await response.json();
             if (response.ok) {
                 navigate('/home', {state: data});
-
+                console.log(data);
             } else {
                 alert(data.message);
             }

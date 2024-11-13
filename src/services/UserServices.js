@@ -37,7 +37,8 @@ app.post('/user/create_user', async (req, res) => {
             CollegeName: req.body.CollegeName,
             Email: req.body.Email,
             Password:req.body.Password,
-            DashboardService: req.body.DashboardService
+            DashboardService: req.body.DashboardService,
+            ...(req.body.CanvasToken && { CanvasToken: req.body.CanvasToken })
         };
 
         const result = client.db("TeachersPet").collection("Users").insertOne(user);

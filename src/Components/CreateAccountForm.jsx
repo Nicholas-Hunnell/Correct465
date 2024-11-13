@@ -10,6 +10,7 @@ const CreateAccountForm = () => {
         college: '',
         educationalService: '',
         password: '',
+        canvasToken: ''
     });
 
     const handleChange = (e) => {
@@ -55,6 +56,16 @@ const CreateAccountForm = () => {
                 value={formData.educationalService}
                 onChange={handleChange}
             />
+            {formData.educationalService === 'canvas' && (
+                <TextField
+                    label="Canvas Token"
+                    type="Text"
+                    name="canvasToken"
+                    placeholder=" Paste your Canvas token here"
+                    value={formData.canvasToken}
+                    onChange={handleChange}
+                />
+            )}
             <TextField
                 label="Password"
                 type="password"

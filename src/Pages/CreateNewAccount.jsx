@@ -9,7 +9,8 @@ function CreateNewAccount() {
         CollegeName: '',
         Email: '',
         Password: '',
-        DashboardService: '' // New field for education dashboard service
+        DashboardService: '', // New field for education dashboard service
+        CanvasToken: ''
     });
     const navigate = useNavigate(); 
     const handleChange = (e) => {
@@ -116,6 +117,19 @@ function CreateNewAccount() {
                         <option value="Google Classroom">Google Classroom</option>
                     </select>
                 </label>
+                {formData.DashboardService === 'Canvas' && (
+                    <label>
+                        Canvas Token:
+                        <input
+                            type="text"
+                            name="CanvasToken"
+                            placeholder="Paste your Canvas token here"
+                            value={formData.CanvasToken}
+                            onChange={handleChange}
+                            required
+                        />
+                    </label>
+                )}
                 <button type="submit">Sign Up</button>
             </form>
             <div className="login-link">

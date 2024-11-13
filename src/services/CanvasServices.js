@@ -27,7 +27,7 @@ app.listen(port, hostname, () => {
 
 
 ////////////////////////////////////////////   CANVAS   ///////////////////////////////////////////
-
+app.post('/canvas/update_token')
 app.get('/canvas/get_all_class_names', (req, res) => {
 
     const options = {
