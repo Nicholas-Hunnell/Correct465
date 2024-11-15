@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GradesDisplay from '../Components/GradeDisplay';  // Import the GradesDisplay component
-
+//change
 const GradeReviewPage = () => {
     const token = localStorage.getItem('canvasToken');
     console.log('Canvas token:', token);
