@@ -7,16 +7,7 @@ import LoginPage from './Pages/LoginPage.jsx';
 import CanvasPage from './Pages/LoginPageCanvas.jsx';
 import GooglePage from './Pages/LoginPageGoogle.jsx';
 import AssignmentsPage from './Pages/GradeReviewPage.jsx';
-const app = express()
-//test
 
-
-app.use(session({
-    secret: 'key',  
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false } 
-}));
 
 const App = () => {
     return (
