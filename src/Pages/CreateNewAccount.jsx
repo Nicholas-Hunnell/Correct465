@@ -119,7 +119,7 @@ function CreateNewAccount() {
                 </label>
                 {formData.DashboardService === 'Canvas' && (
                     <label>
-                        Canvas Token:
+                        User Token:
                         <input
                             type="text"
                             name="CanvasToken"
@@ -127,6 +127,7 @@ function CreateNewAccount() {
                             value={formData.CanvasToken}
                             onChange={handleChange}
                             required
+
                         />
                     </label>
                 )}

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import '../Pages CSS/GradeDisplay.css'; // Make sure to import the updated CSS
 
 const GradeDisplay = ({ token }) => {
     const [grades, setGrades] = useState([]);
+    const [selectedGrade, setSelectedGrade] = useState(null); // Holds the clicked grade item's data
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -50,20 +52,41 @@ const GradeDisplay = ({ token }) => {
         return <p>{error}</p>;
     }
 
+    // Handle the click event to show details
+    const handleGradeClick = (grade) => {
+        setSelectedGrade(grade); // Set the clicked grade's data
+    };
+
     return (
-        <div>
+        <div className="grades-container">
             <h2>Student Grades</h2>
-            <ul>
-                {grades.length === 0 ? (
-                    <p>No assignments available.</p>
-                ) : (
-                    grades.map((grade, index) => (
-                        <li key={index}>
-                            {grade.courseName} - {grade.assignmentName}: {grade.grade} ({grade.score}/{grade.totalPoints})
-                        </li>
-                    ))
-                )}
-            </ul>
+            {grades.length === 0 ? (
+                <p className="no-grades">No assignments available.</p>
+            ) : (
+                <div className="grade-list">
+                    {grades.map((grade, index) => (
+                        <div
+                            key={index}
+                            className="grade-item"
+                            onClick={() => handleGradeClick(grade)} // Update the selected grade on click
+                        >
+                            <strong>{grade.courseName}</strong> - {grade.assignmentName}: {grade.grade} ({grade.score}/{grade.totalPoints})
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Display detailed information if a grade is selected */}
+            {selectedGrade && (
+                <div className="grade-detail">
+                    <h3>Assignment Details</h3>
+                    <p><strong>Course Name:</strong> {selectedGrade.courseName}</p>
+                    <p><strong>Assignment Name:</strong> {selectedGrade.assignmentName}</p>
+                    <p><strong>Grade:</strong> {selectedGrade.grade}</p>
+                    <p><strong>Score:</strong> {selectedGrade.score}</p>
+                    <p><strong>Total Points:</strong> {selectedGrade.totalPoints}</p>
+                </div>
+            )}
         </div>
     );
 };

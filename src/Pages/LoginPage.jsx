@@ -4,6 +4,7 @@ import '../Pages CSS/LoginPage.css';
 
 function LoginPage() {
     const [email, setEmail] = useState('');
+    localStorage.setItem('canvasId', '10500000007027479');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
 
@@ -11,10 +12,12 @@ function LoginPage() {
     const handleLoginClick = async () => {
         try {
             const response = await fetch('http://127.0.0.1:3003/user/login', {
+
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ Email: email, Password: password })
             });
+
 
             const data = await response.json();
 

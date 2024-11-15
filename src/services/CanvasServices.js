@@ -551,136 +551,6 @@ app.post('/canvas/auth/getToken', (req, res) => {
     });
 })
 //ATEMPT AT ThE MEGA LOOP
-app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpmn/:userId', (req, res) => {
-    const userId = req.params.userId;
-
-    // Step 1: Get all course IDs for the user
-    const courseOptions = {
-        hostname: canvasHost,
-        port: 443,
-        path: '/api/v1/users/self/favorites/courses?enrollment_state=active',
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json+canvas-string-ids'
-        }
-    };
-
-    const courseRequest = https.request(courseOptions, courseResponse => {
-        let courseData = '';
-
-        courseResponse.on('data', chunk => {
-            courseData += chunk;
-        });
-
-        courseResponse.on('end', () => {
-            if (courseResponse.statusCode === 200) {
-                const courses = JSON.parse(courseData);
-                const assignmentsPromises = [];
-
-                // Step 2: Create promises to get assignments for each course
-                courses.forEach(course => {
-                    if (course.id) {
-                        const assignmentOptions = {
-                            hostname: canvasHost,
-                            port: 443,
-                            path: `/api/v1/courses/${course.id}/assignments?include[]=submission&include[]=grading`,
-                            method: 'GET',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Accept': 'application/json+canvas-string-ids'
-                            }
-                        };
-
-                        const assignmentPromise = new Promise((resolve, reject) => {
-                            const assignmentRequest = https.request(assignmentOptions, assignmentResponse => {
-                                let assignmentData = '';
-
-                                assignmentResponse.on('data', chunk => {
-                                    assignmentData += chunk;
-                                });
-
-                                assignmentResponse.on('end', () => {
-                                    if (assignmentResponse.statusCode === 200) {
-                                        resolve(JSON.parse(assignmentData));
-                                    } else {
-                                        reject({
-                                            status: assignmentResponse.statusCode,
-                                            message: 'Error retrieving assignments',
-                                            error: assignmentData
-                                        });
-                                    }
-                                });
-                            });
-
-                            assignmentRequest.on('error', error => {
-                                reject({
-                                    status: 500,
-                                    message: 'Error connecting to Canvas API',
-                                    error: error.message
-                                });
-                            });
-
-                            assignmentRequest.end();
-                        });
-
-                        assignmentsPromises.push(assignmentPromise);
-                    }
-                });
-
-                // Step 3: Wait for all assignment requests to complete
-                Promise.all(assignmentsPromises)
-                    .then(assignmentsArray => {
-                        res.writeHead(200, { 'Content-Type': 'text/html' });
-                        let html = '<html><body><p>All Assignments with Letter Grades:</p><ul>';
-
-                        assignmentsArray.forEach(assignments => {
-                            assignments.forEach(assignment => {
-                                const submission = assignment.submission;
-                                const totalPoints = assignment.points_possible || 0;
-                                const score = submission ? submission.score : 0;
-
-                                let letterGrade = 'Not graded';
-                                if (totalPoints > 0 && submission) {
-                                    const percentage = (score / totalPoints) * 100;
-                                    letterGrade = getLetterGrade(percentage);
-                                }
-                                html += `<li><a href="#" class="assignment" data-grade="${letterGrade}">${assignment.name} (Grade ${letterGrade})</a></li>`;
-                            });
-                        });
-
-                        html += '</ul></body></html>';
-                        res.end(html); // End response with HTML content
-                    })
-
-                    .catch(error => {
-                        res.status(error.status || 500).json({
-                            message: error.message,
-                            status: error.status,
-                            error: error.error
-                        });
-                    });
-            } else {
-                res.status(courseResponse.statusCode).json({
-                    message: 'Error retrieving courses',
-                    status: courseResponse.statusCode,
-                    error: courseData
-                });
-            }
-        });
-    });
-
-    courseRequest.on('error', error => {
-        res.status(500).json({
-            message: 'Error connecting to Canvas API',
-            error: error.message
-        });
-    });
-
-    courseRequest.end(); // Close the request properly
-});
-
-
 
 app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
     const { token } = req.query;  // Get only the token from query parameters
@@ -694,9 +564,9 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
 
     // Use the token to get courses
     const courseOptions = {
-        hostname: 'canvas.instructure.com',  // Make sure the hostname is correct
+        hostname: 'psu.instructure.com',  // Make sure the hostname is correct
         port: 443,
-        path: `/api/v1/users/self/courses?enrollment_state=active`,  // Fetch courses for the authenticated user
+        path: `/api/v1/users/self/favorites/courses?enrollment_state=active`,  // Fetch courses for the authenticated user
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -719,9 +589,9 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
                 courses.forEach(course => {
                     if (course.id) {
                         const assignmentOptions = {
-                            hostname: 'canvas.instructure.com',
+                            hostname: 'psu.instructure.com',
                             port: 443,
-                            path: `/api/v1/courses/${course.id}/assignments?include[]=submission&include[]=grading`,
+                            path: `/api/v1//users/self/favorites/courses/${course.id}/assignments?include[]=submission&include[]=grading`,
                             method: 'GET',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
