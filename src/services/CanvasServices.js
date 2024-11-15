@@ -22,7 +22,7 @@ const client = new MongoClient(uri);
 
 //local variables
 const canvasHost = 'psu.instructure.com';
-const token = '1050~4WUJvvzJVEDn3XKwKe2YceRcnXBcnnazU7umzZExCfxm79hN3XcK7FyxGmVvkknG'; //this is the user generated token
+//const token = '1050~4WUJvvzJVEDn3XKwKe2YceRcnXBcnnazU7umzZExCfxm79hN3XcK7FyxGmVvkknG'; //this is the user generated token
 
 // Start the Express server
 app.listen(port, hostname, () => {
@@ -680,13 +680,15 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpmn/:userId', (req, res)
     courseRequest.end(); // Close the request properly
 });
 
-app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
-    const { userId, token } = req.query;  // Get userId and token from query parameters
 
-    // Check if userId or token is missing
-    if (!userId || !token) {
+
+app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
+    const { token } = req.query;  // Get only the token from query parameters
+
+    // Check if the token is missing
+    if (!token) {
         return res.status(400).json({
-            message: 'userId and token are required'
+            message: 'Token is required'
         });
     }
 
@@ -694,7 +696,7 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
     const courseOptions = {
         hostname: 'canvas.instructure.com',  // Make sure the hostname is correct
         port: 443,
-        path: `/api/v1/users/self/courses?enrollment_state=active`,  // Using userId in the path
+        path: `/api/v1/users/self/courses?enrollment_state=active`,  // Fetch courses for the authenticated user
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -791,7 +793,6 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
                         });
 
                         res.status(200).json({
-                            userId: userId,
                             assignments: assignmentsWithGrades
                         });
                     })
@@ -821,3 +822,12 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
 
     courseRequest.end();
 });
+
+// Helper function to determine letter grade
+function getLetterGrade(percentage) {
+    if (percentage >= 90) return 'A';
+    if (percentage >= 80) return 'B';
+    if (percentage >= 70) return 'C';
+    if (percentage >= 60) return 'D';
+    return 'F';
+}

@@ -1,24 +1,22 @@
 import React, { useEffect, useState } from 'react';
-//change
-const GradeDisplay = ({ token, canvasUserId }) => {
+
+const GradeDisplay = ({ token }) => {
     const [grades, setGrades] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Fetch grades once the Canvas user ID is available
+    // Fetch grades using the token
     useEffect(() => {
-        if (!canvasUserId) return;  // Don't fetch grades until we have the Canvas user ID
         if (!token) {
-            setError("Missing token");
+            setError("Missing Canvas token. Please log in again.");
             setLoading(false);
             return;
         }
 
-        // Fetch grades using the Canvas User ID
         const fetchGrades = async () => {
             setLoading(true);
             try {
-                const url = `http://127.0.0.1:3001/canvas/get_all_assignments_with_gradesOGONEnpnpm/?userId=${canvasUserId}&token=${token}`;
+                const url = `http://127.0.0.1:3001/canvas/get_all_assignments_with_gradesOGONEnpnpm/?token=${token}`;
 
                 const response = await fetch(url, {
                     method: 'GET',
@@ -42,7 +40,7 @@ const GradeDisplay = ({ token, canvasUserId }) => {
         };
 
         fetchGrades();
-    }, [canvasUserId, token]); // Fetch grades only after Canvas User ID is set
+    }, [token]); // Re-run if the token changes
 
     if (loading) {
         return <p>Loading grades...</p>;
