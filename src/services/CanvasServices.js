@@ -6,13 +6,14 @@ const https = require("https");
 const port = 3001;
 const hostname = '127.0.0.1';
 
+
 //frontend connection
 const corsOptions = {
-    origin: 'http://localhost:3000'
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Specify allowed methods
+    allowedHeaders: ['Authorization', 'Content-Type'],  // Allow specific headers
 };
 app.use(cors(corsOptions))
-
-const user = req.session.user;
 
 
 //mongo connection
@@ -21,7 +22,7 @@ const client = new MongoClient(uri);
 
 //local variables
 const canvasHost = 'psu.instructure.com';
-const token = user.Token; //this is the user generated token
+const token = '1050~4WUJvvzJVEDn3XKwKe2YceRcnXBcnnazU7umzZExCfxm79hN3XcK7FyxGmVvkknG'; //this is the user generated token
 
 // Start the Express server
 app.listen(port, hostname, () => {
@@ -32,6 +33,11 @@ app.listen(port, hostname, () => {
 ////////////////////////////////////////////   CANVAS   ///////////////////////////////////////////
 app.post('/canvas/update_token')
 app.get('/canvas/get_all_class_names', (req, res) => {
+    const user = req.session.user;
+
+    if (!user) {
+        return res.status(401).json({ message: 'User not logged in' });
+    }
 
     const options = {
         hostname: canvasHost,
@@ -455,58 +461,72 @@ app.get('/canvas/get_grade_changes/:studentId', (req, res) => {
 
 //Gets Canvas Account info
 app.get('/canvas/get_canvas_account_info', (req, res) => {
+    console.log('Received Headers:', req.headers);  // Log the full headers
+    const token = req.headers['authorization']?.split(' ')[1]; // Extract the token
+    console.log('Token extracted:', token);  // Log token after extraction
+
+    if (!token) {
+        return res.status(400).json({ message: 'Token is missing' });
+    }
+
     const options = {
-        hostname: canvasHost,
+        hostname: 'canvas.instructure.com', // Make sure you are using the correct Canvas hostname
         port: 443,
-        path: '/api/v1/users/self',
+        path: '/api/v1/users/self',  // This is the Canvas API endpoint to get current user info
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json+canvas-string-ids'
-        }
+            'Accept': 'application/json+canvas-string-ids',  // Accept Canvas-specific string-IDs
+        },
     };
 
     const apiRequest = https.request(options, apiResponse => {
         let data = '';
-
         apiResponse.on('data', chunk => {
             data += chunk;
         });
 
         apiResponse.on('end', () => {
+            console.log('Canvas API Response:', data);  // Log the raw response
+
             if (apiResponse.statusCode === 200) {
                 const userInfo = JSON.parse(data);
+                console.log('Full Canvas User ID (long format):', userInfo.user_id);
+                const shortCanvasUserId = userInfo.user_id.slice(-7);  // Get last 7 digits for short form ID
+                console.log('Short Canvas User ID (last 7 digits):', shortCanvasUserId);
 
-                res.writeHead(200, { 'Content-Type': 'text/html' });
-                res.write('<html><body><p>User Account Info:</p><ul>');
 
-                // Display user information
-                res.write(`<li>User ID: ${userInfo.id}</li>`);
-                res.write(`<li>Name: ${userInfo.name}</li>`);
-                res.write(`<li>Login ID: ${userInfo.login_id}</li>`);
-                res.write(`<li>Created At: ${userInfo.created_at}</li>`);
-
-                res.write('</ul></body></html>');
-                res.end();
+                console.log('Canvas User ID:', canvasUserId);  // Log the user ID for debugging
+                
+                res.json({ 
+                    userId: canvasUserId,  // Send back the correct user ID (short-form)
+                    ...userInfo  // Send the rest of the user info as well
+                });
             } else {
+                console.error('Error fetching Canvas user info:', data);
                 res.status(apiResponse.statusCode).json({
-                    message: 'Error retrieving user info',
+                    message: 'Error retrieving user info from Canvas',
                     status: apiResponse.statusCode,
-                    error: data
+                    error: data,  // Send raw error data for debugging
                 });
             }
         });
     });
 
     apiRequest.on('error', error => {
+        console.error('Error connecting to Canvas API:', error);
         res.status(500).json({
             message: 'Error connecting to Canvas API',
-            error: error.message
+            error: error.message,
         });
     });
 
-    apiRequest.end(); // Close the request properly
+    apiRequest.end();  // Close the request properly
 });
+
+
+
+
 app.get('/canvas/get_single_class', (req, res) => {
     res.status(200).json({
         message: 'Successfully called canvas/get_single_class'
@@ -660,13 +680,21 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpmn/:userId', (req, res)
     courseRequest.end(); // Close the request properly
 });
 
-app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm/:userId', (req, res) => {
-    const userId = req.params.userId;
+app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
+    const { userId, token } = req.query;  // Get userId and token from query parameters
 
+    // Check if userId or token is missing
+    if (!userId || !token) {
+        return res.status(400).json({
+            message: 'userId and token are required'
+        });
+    }
+
+    // Use the token to get courses
     const courseOptions = {
-        hostname: canvasHost,
+        hostname: 'canvas.instructure.com',  // Make sure the hostname is correct
         port: 443,
-        path: '/api/v1/users/self/favorites/courses?enrollment_state=active',
+        path: `/api/v1/users/self/courses?enrollment_state=active`,  // Using userId in the path
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -686,11 +714,10 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm/:userId', (req, res) 
                 const courses = JSON.parse(courseData);
                 const assignmentsPromises = [];
 
-
                 courses.forEach(course => {
                     if (course.id) {
                         const assignmentOptions = {
-                            hostname: canvasHost,
+                            hostname: 'canvas.instructure.com',
                             port: 443,
                             path: `/api/v1/courses/${course.id}/assignments?include[]=submission&include[]=grading`,
                             method: 'GET',
@@ -736,7 +763,7 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm/:userId', (req, res) 
                     }
                 });
 
-                // Step 3: Wait for all assignment requests to complete
+                // Wait for all assignment requests to complete
                 Promise.all(assignmentsPromises)
                     .then(assignmentsArray => {
                         const assignmentsWithGrades = [];
@@ -762,7 +789,6 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm/:userId', (req, res) 
                                 });
                             });
                         });
-
 
                         res.status(200).json({
                             userId: userId,
@@ -795,5 +821,3 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm/:userId', (req, res) 
 
     courseRequest.end();
 });
-
-//test

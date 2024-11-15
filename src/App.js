@@ -6,21 +6,21 @@ import CreateNewAccount from './Pages/CreateNewAccount.jsx';
 import LoginPage from './Pages/LoginPage.jsx'; 
 import CanvasPage from './Pages/LoginPageCanvas.jsx';
 import GooglePage from './Pages/LoginPageGoogle.jsx';
-import AssignmentsPage from './Pages/GradeReviewPage.jsx';
+import GradeReviewPage from './Pages/GradeReviewPage.jsx';
 
 
 const App = () => {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<LoginPage />} /> {/* Default route for the login page */}
-                <Route path="/login" element={<LoginPage />} /> {/* Route for login */}
+                <Route path="/" element={<LoginPage />} /> 
+                <Route path="/login" element={<LoginPage />} /> 
                 <Route path="/create-account" element={<CreateNewAccount />} />
                 <Route path="/home" element={<Home />} />
                 <Route path="/grades" element={<Grades />} />
                 <Route path="/CanvasLogIn" element={<CanvasPage />} />
                 <Route path = "/GoogleLogIn" element={<GooglePage />}  />
-                <Route path="/GradeReviewPage/:userId" element={<AssignmentsPage />} />
+                <Route path="/GradeReviewPage" element={<GradeReviewPage />} />
             </Routes>
         </Router>
     );

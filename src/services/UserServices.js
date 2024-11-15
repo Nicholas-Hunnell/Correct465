@@ -6,6 +6,8 @@ app.use(express.json());
 const port = 3003; //3003
 const hostname = '127.0.0.1';
 const ObjectId = require('mongodb').ObjectId;
+const jwt = require('jsonwebtoken');
+
 
 const cors = require("cors");
 app.use(cors());
@@ -38,7 +40,7 @@ app.post('/user/create_user', async (req, res) => {
             Email: req.body.Email,
             Password:req.body.Password,
             DashboardService: req.body.DashboardService,
-            ...(req.body.CanvasToken && { Token: req.body.CanvasToken })
+            ...(req.body.CanvasToken && { CanvasToken: req.body.CanvasToken })
         };
 
         const result = client.db("TeachersPet").collection("Users").insertOne(user);
@@ -151,27 +153,35 @@ app.get('/user/get_id_by_email', async (req, res) => {
 //login function used in LoginPage.jsx
 app.post('/user/login', async (req, res) => {
     try {
-        const {Email, Password} = req.body;
-        const user = await client.db("TeachersPet").collection("Users").findOne({Email});
+        const { Email, Password } = req.body;
+
+        // Find the user in the database
+        const user = await client.db("TeachersPet").collection("Users").findOne({ Email });
 
         if (!user) {
-            return res.status(404).json({message: "User does not exist in the database"});
+            return res.status(404).json({ message: "User does not exist in the database" });
         }
 
-        if (Password!== user.Password) {
-            return res.status(401).json({message: "Password is incorrect"});
+        // Verify the password (Never send password to frontend)
+        if (Password !== user.Password) {
+            return res.status(401).json({ message: "Password is incorrect" });
         }
-        req.session.user = {id: user._id, email: user.Email, firstName: user.FirstName, token:user.Token};
+
+        // Generate a JWT token (you can adjust expiration as needed)
+        const token = jwt.sign({ userId: user._id, email: user.Email }, 'your_jwt_secret', { expiresIn: '1000000h' });
+
+        // Remove the password before sending it to the frontend for security reasons
+        const { Password: _, ...userData } = user; // Destructure to remove Password
+
         res.status(200).json({
             message: "Login Successful",
-            user: {id: user._id, email: user.Email, firstName: user.FirstName, token:user.Token}
+            token,
+            user: userData, // Send the rest of the user data
         });
-
-
-    } catch(error){
-        res.status(500).json({message: "Error with login", error: error.message});
+    } catch (error) {
+        res.status(500).json({ message: "Error with login", error: error.message });
     }
-});
+})
 
 
 

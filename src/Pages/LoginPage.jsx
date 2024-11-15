@@ -6,6 +6,8 @@ function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
+
+    // Handle login click event
     const handleLoginClick = async () => {
         try {
             const response = await fetch('http://127.0.0.1:3003/user/login', {
@@ -15,15 +17,31 @@ function LoginPage() {
             });
 
             const data = await response.json();
+
+            // If the login is successful
             if (response.ok) {
-                navigate('/home', {state: data});
-                console.log(data);
+                // Save the token to localStorage
+                localStorage.setItem('token', data.token);
+
+                // Save user data to localStorage (excluding the password)
+                localStorage.setItem('userId', data.user._id);
+                localStorage.setItem('firstName', data.user.FirstName);
+                localStorage.setItem('lastName', data.user.LastName);
+                localStorage.setItem('collegeName', data.user.CollegeName);
+                localStorage.setItem('email', data.user.Email);
+                localStorage.setItem('dashboardService', data.user.DashboardService);
+                localStorage.setItem('canvasToken', data.user.CanvasToken);
+
+                // Navigate to the home page or desired page after successful login
+                navigate('/home', { state: data });
+
+                console.log('Login successful', data);
             } else {
                 alert(data.message);
             }
-        }catch (error) {
+        } catch (error) {
             console.error("Error with Login Procedure: ", error);
-            alert("Error occured with login Procedure.  Try Again");
+            alert("Error occurred with login procedure. Please try again.");
         }
     };
 
@@ -61,4 +79,3 @@ function LoginPage() {
 }
 
 export default LoginPage;
-//test

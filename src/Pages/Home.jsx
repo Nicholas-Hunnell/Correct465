@@ -33,7 +33,7 @@ const Home = () => {
             <p>
                 <a href={googleClassroomRedirect}>Connect Google Classroom Account</a>
                 <br/>
-                <a href="http://localhost:3000/GradeReviewPage/7097162">View Canvas Grades</a>
+                <a href="http://localhost:3000/GradeReviewPage/">View Canvas Grades</a>
             </p>
         </div>
 
