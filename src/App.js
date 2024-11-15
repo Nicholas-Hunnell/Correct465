@@ -7,6 +7,7 @@ import LoginPage from './Pages/LoginPage.jsx';
 import CanvasPage from './Pages/LoginPageCanvas.jsx';
 import GooglePage from './Pages/LoginPageGoogle.jsx';
 import GradeReviewPage from './Pages/GradeReviewPage.jsx';
+import GradeHelpPage from './Pages/GradeHelpPage.jsx'
 
 
 const App = () => {
@@ -21,6 +22,7 @@ const App = () => {
                 <Route path="/CanvasLogIn" element={<CanvasPage />} />
                 <Route path = "/GoogleLogIn" element={<GooglePage />}  />
                 <Route path="/GradeReviewPage" element={<GradeReviewPage />} />
+                <Route path="/GradeHelpPage" element={<GradeHelpPage />} />
             </Routes>
         </Router>
     );

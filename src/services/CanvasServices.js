@@ -564,7 +564,7 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
 
     // Use the token to get courses
     const courseOptions = {
-        hostname: 'psu.instructure.com',  // Make sure the hostname is correct
+        hostname: 'canvas.instructure.com',  // Make sure the hostname is correct
         port: 443,
         path: `/api/v1/users/self/favorites/courses?enrollment_state=active`,  // Fetch courses for the authenticated user
         method: 'GET',
@@ -591,7 +591,7 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
                         const assignmentOptions = {
                             hostname: 'psu.instructure.com',
                             port: 443,
-                            path: `/api/v1//users/self/favorites/courses/${course.id}/assignments?include[]=submission&include[]=grading`,
+                            path: `/api/v1/users/self/courses/${course.id}/assignments?include[]=submission&include[]=grading`,
                             method: 'GET',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
