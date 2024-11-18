@@ -2,12 +2,15 @@
 const express = require("express");
 const {MongoClient, ObjectId} = require("mongodb");
 const app = express();
+const cors = require('cors');
+app.use(cors());
 app.use(express.json());
 const https = require('https');
 const { OAuth2Client } = require("google-auth-library");
 const react = require('react');
 const { useState } = require('react');
 const {Link, useNavigate} = require("react-router-dom");
+const {stringify} = require("node:querystring");
 
 const port = 3002;
 const hostname = '127.0.0.1';
@@ -30,13 +33,217 @@ app.listen(port, hostname, async () => {
     oAuth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
 });
 
+app.get('/Gclass/get_all_assignments_with_grades', async (req, res) => {
+    const gtoken = decodeURIComponent(req.query.googleToken); // Google token passed in URL
 
-//Authentication
-const gtoken = "";
+    const courseOptions = {
+        hostname: 'classroom.googleapis.com',
+        port: 443,
+        path: '/v1/courses?courseStates=ACTIVE',
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${gtoken}`
+        }
+    };
 
+    const courseRequest = https.request(courseOptions, courseResponse => {
+        let courseData = '';
+
+        courseResponse.on('data', chunk => {
+            courseData += chunk;
+        });
+
+        courseResponse.on('end', async () => {
+            if (courseResponse.statusCode === 200) {
+                const courses = JSON.parse(courseData).courses || [];
+                if (courses.length === 0) {
+                    res.json({ message: 'No courses found.' });
+                    return;
+                }
+
+                const assignments = [];
+                let coursesProcessed = 0;
+
+                for (const course of courses) {
+                    const courseId = course.id;
+                    const courseName = course.name;
+
+                    // Get coursework for each course
+                    const courseworkOptions = {
+                        hostname: 'classroom.googleapis.com',
+                        port: 443,
+                        path: `/v1/courses/${courseId}/courseWork`,
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${gtoken}`
+                        }
+                    };
+
+                    const courseworkData = await new Promise((resolve, reject) => {
+                        const courseworkRequest = https.request(courseworkOptions, courseworkResponse => {
+                            let courseworkData = '';
+
+                            courseworkResponse.on('data', chunk => {
+                                courseworkData += chunk;
+                            });
+
+                            courseworkResponse.on('end', () => {
+                                if (courseworkResponse.statusCode === 200) {
+                                    resolve(JSON.parse(courseworkData).courseWork || []);
+                                } else {
+                                    reject(new Error(`Error retrieving coursework for course ${courseId}`));
+                                }
+                            });
+                        });
+
+                        courseworkRequest.on('error', error => {
+                            reject(new Error(`Error connecting to Google Classroom API for coursework: ${error.message}`));
+                        });
+
+                        courseworkRequest.end();
+                    });
+
+                    if (courseworkData.length === 0) {
+                        // If no assignments for this course, skip to the next course
+                        coursesProcessed++;
+                        if (coursesProcessed === courses.length) {
+                            res.json(assignments);
+                        }
+                        continue;
+                    }
+
+                    // Process assignments and get links and grades
+                    for (const work of courseworkData) {
+                        const courseWorkId = work.id;
+                        const assignmentName = work.title;
+                        const maxPoints = work.maxPoints || 0;
+
+                        // Get student submissions for each coursework
+                        const submissionData = await new Promise((resolve, reject) => {
+                            const submissionOptions = {
+                                hostname: 'classroom.googleapis.com',
+                                port: 443,
+                                path: `/v1/courses/${courseId}/courseWork/${courseWorkId}/studentSubmissions`,
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${gtoken}`
+                                }
+                            };
+
+                            const submissionRequest = https.request(submissionOptions, submissionResponse => {
+                                let submissionData = '';
+
+                                submissionResponse.on('data', chunk => {
+                                    submissionData += chunk;
+                                });
+
+                                submissionResponse.on('end', () => {
+                                    if (submissionResponse.statusCode === 200) {
+                                        resolve(JSON.parse(submissionData).studentSubmissions || []);
+                                    } else {
+                                        reject(new Error(`Error retrieving submissions for coursework ${courseWorkId}`));
+                                    }
+                                });
+                            });
+
+                            submissionRequest.on('error', error => {
+                                reject(new Error(`Error connecting to Google Classroom API for submissions: ${error.message}`));
+                            });
+
+                            submissionRequest.end();
+                        });
+
+                        // Process each submission and calculate grades
+                        for (const submission of submissionData) {
+                            if (submission.assignedGrade !== undefined) {
+                                const score = submission.assignedGrade;
+                                const grade = getGrade(score, maxPoints); // Call function to determine the grade
+
+                                // Fetch the assignment link
+                                try {
+                                    const assignmentLink = await getAssignmentLink(gtoken, courseId, courseWorkId);
+
+                                    // Add assignment details with the link
+                                    assignments.push({
+                                        course: courseName,
+                                        assignmentName: assignmentName,
+                                        assignmentLink: assignmentLink,
+                                        grade: grade,
+                                        score: score,
+                                        totalPoints: maxPoints
+                                    });
+                                } catch (error) {
+                                    console.error(`Error fetching link for assignment ${courseWorkId}: ${error.message}`);
+                                }
+                            }
+                        }
+                    }
+
+                    coursesProcessed++;
+                    if (coursesProcessed === courses.length) {
+                        res.json(assignments);
+                    }
+                }
+            } else {
+                res.status(courseResponse.statusCode).json({
+                    message: 'Error retrieving courses',
+                    error: courseData
+                });
+            }
+        });
+    });
+
+    courseRequest.on('error', error => {
+        res.status(500).json({ message: 'Error connecting to Google Classroom API for courses', error: error.message });
+    });
+
+    courseRequest.end();
+});
+
+app.get('/Gclass/get_courses', (req, res) => {
+    const gtoken = req.body.googleClassroomToken;
+    const options = {
+        hostname: 'classroom.googleapis.com',
+        port: 443,
+        path: '/v1/courses',
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${gtoken}`
+        }
+    };
+
+    const apiRequest = https.request(options, apiResponse => {
+        let data = '';
+
+        apiResponse.on('data', chunk => {
+            data += chunk;
+        });
+
+        apiResponse.on('end', () => {
+            if (apiResponse.statusCode === 200) {
+                const courses = JSON.parse(data);
+                res.json(courses);
+            } else {
+                res.status(apiResponse.statusCode).json({
+                    message: 'Error retrieving courses',
+                    status: apiResponse.statusCode,
+                    error: data
+                });
+            }
+        });
+    });
+
+    apiRequest.on('error', error => {
+        res.status(500).json({ message: 'Error connecting to Google Classroom API', error: error.message });
+    });
+
+    apiRequest.end();
+});
 
 app.get('/Gclass/get_overall_grades', async (req, res) => {
     // Step 1: Define options for getting the list of courses
+    const gtoken = req.query.googleClassroomToken;
+
     const courseOptions = {
         hostname: 'classroom.googleapis.com',
         port: 443,
@@ -192,45 +399,57 @@ app.get('/Gclass/get_overall_grades', async (req, res) => {
     courseRequest.end();
 });
 
-app.get('/Gclass/get_courses', (req, res) => {
-    const options = {
+app.get('/Gclass/getAssignmentLink', async (req, res) => {
+    // Step 1: Get the token and assignment ID from the query parameters
+    const gtoken = decodeURIComponent(req.query.googleToken); // Google token passed in URL
+    const assignmentId = req.query.assignmentId; // Assignment ID passed in URL
+
+    // Step 2: Make request to Google Classroom API to retrieve the assignment details
+    const courseworkOptions = {
         hostname: 'classroom.googleapis.com',
         port: 443,
-        path: '/v1/courses',
+        path: `/v1/courses/courseId/courseWork/${assignmentId}`,  // Course ID should be dynamic or passed as part of the request
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${gtoken}`
         }
     };
 
-    const apiRequest = https.request(options, apiResponse => {
-        let data = '';
+    const courseworkRequest = https.request(courseworkOptions, courseworkResponse => {
+        let courseworkData = '';
 
-        apiResponse.on('data', chunk => {
-            data += chunk;
+        courseworkResponse.on('data', chunk => {
+            courseworkData += chunk;
         });
 
-        apiResponse.on('end', () => {
-            if (apiResponse.statusCode === 200) {
-                const courses = JSON.parse(data);
-                res.json(courses);
+        courseworkResponse.on('end', () => {
+            if (courseworkResponse.statusCode === 200) {
+                const assignment = JSON.parse(courseworkData);
+
+                // Step 3: Check if the assignment has a URL link
+                if (assignment && assignment.link) {
+                    res.json({
+                        message: 'Assignment link found.',
+                        assignmentLink: assignment.link.url
+                    });
+                } else {
+                    res.status(404).json({ message: 'Assignment link not found.' });
+                }
             } else {
-                res.status(apiResponse.statusCode).json({
-                    message: 'Error retrieving courses',
-                    status: apiResponse.statusCode,
-                    error: data
+                res.status(courseworkResponse.statusCode).json({
+                    message: `Error retrieving assignment details for ID ${assignmentId}`,
+                    error: courseworkData
                 });
             }
         });
     });
 
-    apiRequest.on('error', error => {
-        res.status(500).json({ message: 'Error connecting to Google Classroom API', error: error.message });
+    courseworkRequest.on('error', error => {
+        res.status(500).json({ message: 'Error connecting to Google Classroom API for coursework', error: error.message });
     });
 
-    apiRequest.end();
+    courseworkRequest.end();
 });
-
 
 
 /*
@@ -396,29 +615,38 @@ app.get('/Gclass/login', (req, res) => {
     apiRequest.end(); // Close the request properly
 })
 
-
-var loggedInUser = "";
-app.get("/auth/google/:userId", async (req, res) => {
-    loggedInUser = req.params.userId;
+app.get('/auth/google', (req, res) => {
+    const userId = req.query.userId;
+    if (!userId) {
+        return res.status(400).json({ error: 'userId is required' });
+    }
 
     const scopes = [
         "https://www.googleapis.com/auth/classroom.courses.readonly",
         "https://www.googleapis.com/auth/classroom.rosters.readonly",
-        "https://www.googleapis.com/auth/classroom.coursework.students.readonly"
+        "https://www.googleapis.com/auth/classroom.coursework.students.readonly",
+        "https://www.googleapis.com/auth/classroom.coursework.me",
+
     ];
 
-    const authUrl = oAuth2Client.generateAuthUrl({
-        access_type: "offline", // Allows refresh token
-        scope: scopes,
-    });
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${stringify({
+        access_type: 'offline',
+        scope: scopes.join(' '),
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        state: JSON.stringify({ userId }), // Optional state to track the user
+    })}`;
 
     res.redirect(authUrl);
-})
-
-
+});
 
 app.get("/auth/googleCallback", async (req, res) => {
-    const code = req.query.code;
+    const { code, state } = req.query;
+
+    console.log(JSON.parse(state)?.userId);
+
+    const userId = ObjectId.createFromHexString(JSON.parse(state)?.userId);
 
     if (!code) {
         return res.status(400).send("Authorization code is missing");
@@ -429,55 +657,120 @@ app.get("/auth/googleCallback", async (req, res) => {
         const { tokens } = await oAuth2Client.getToken(code);
         oAuth2Client.setCredentials(tokens);
 
-        var loggedInUserId = await ObjectId.createFromHexString(loggedInUser);
+        const loggedInUserId = userId;
+
         // Store token in MongoDB
-        const oldUser = await client.db("TeachersPet").collection("Users").findOne({_id: loggedInUserId});
-        console.log(oldUser)
+        const oldUser = await client
+            .db("TeachersPet")
+            .collection("Users")
+            .findOne({ _id: loggedInUserId });
+
+        if (!oldUser) {
+            return res.status(404).json({
+                message: "User not found in database",
+            });
+        }
+
         oldUser.googleClassroomToken = tokens.access_token;
 
-        const result = await client.db("TeachersPet").collection("Users").updateOne({_id: loggedInUserId}, { $set: oldUser});
-        if(!result) {
-            res.status(400).json({
-                message: 'Error connecting to the database'
-            })
+        const result = await client
+            .db("TeachersPet")
+            .collection("Users")
+            .updateOne({ _id: loggedInUserId }, { $set: oldUser });
+
+        if (!result.acknowledged) {
+            return res.status(400).json({
+                message: "Error connecting to the database",
+            });
         }
+
         console.log(
-            "Token: "+tokens.access_token+"\n"+
-            "Refresh token: "+tokens.refresh_token+"\n"+
-            "Expiry date: "+tokens.expiry_date
-        )
-        const navigate = useNavigate();
-        navigate('/home', {state: {user: oldUser}});
-        res.status(200).send("Authentication successfull");
+            "Token: " + tokens.access_token + "\n" +
+            "Refresh token: " + tokens.refresh_token + "\n" +
+            "Expiry date: " + tokens.expiry_date
+        );
+
+        // Redirect to frontend after successful authentication
+        //get the user info again from the userId:
+
+        const frontendUrl = `http://localhost:3000/home`; // Update to match your frontend URL
+        return res.redirect(
+            `${frontendUrl}?success=true&user=${encodeURIComponent(
+                JSON.stringify(oldUser)
+            )}`
+        );
 
     } catch (error) {
         console.error("Error exchanging code for tokens:", error);
-        res.status(500).send("Authentication failed");
+        return res.status(500).send("Authentication failed");
     }
 });
 
 app.get("/auth/google/getUserAuthToken", async (req, res) => {
-    const userId = await ObjectId.createFromHexString(req.body.id);
-    const result = await client.db("TeachersPet").collection("tokens").findOne({_id: userId});
+
+
+    const result = await client.db("TeachersPet").collection("Users").findOne({_id: ObjectId.createFromHexString(req.body.id)});
 
     if(!result) {
         res.status(500).json({
-            message: 'Error: No token could be found for that user.'
+            message: 'Error: This user does not exist'
         });
     }
     else{
         console.log(result);
         res.json({
-            access_token: result.access_token
+            access_token: result.googleClassroomToken
         });
     }
 
 })
 
-async function checkAuth(){
 
-
-
+//Helper functions:
+function getGrade (percentage) {
+    if (percentage >= 90) return 'A';
+    if (percentage >= 80) return 'B';
+    if (percentage >= 70) return 'C';
+    if (percentage >= 60) return 'D';
+    return 'F';
 }
+const getAssignmentLink = (gtoken, courseId, assignmentId) => {
+    return new Promise((resolve, reject) => {
+        const courseworkOptions = {
+            hostname: 'classroom.googleapis.com',
+            port: 443,
+            path: `/v1/courses/${courseId}/courseWork/${assignmentId}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${gtoken}`
+            }
+        };
 
-//test
+        const courseworkRequest = https.request(courseworkOptions, courseworkResponse => {
+            let courseworkData = '';
+
+            courseworkResponse.on('data', chunk => {
+                courseworkData += chunk;
+            });
+
+            courseworkResponse.on('end', () => {
+                if (courseworkResponse.statusCode === 200) {
+                    const assignment = JSON.parse(courseworkData);
+                    if (assignment && assignment.link) {
+                        resolve(assignment.link.url); // Resolve with the link URL
+                    } else {
+                        resolve(""); // If no link is found, return an empty string
+                    }
+                } else {
+                    reject(new Error(`Error retrieving assignment link: ${courseworkData}`));
+                }
+            });
+        });
+
+        courseworkRequest.on('error', error => {
+            reject(new Error(`Error connecting to Google Classroom API for coursework: ${error.message}`));
+        });
+
+        courseworkRequest.end();
+    });
+};
