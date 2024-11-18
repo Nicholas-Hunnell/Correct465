@@ -11,6 +11,7 @@ const react = require('react');
 const { useState } = require('react');
 const {Link, useNavigate} = require("react-router-dom");
 const {stringify} = require("node:querystring");
+const {post} = require("axios");
 
 const port = 3002;
 const hostname = '127.0.0.1';
@@ -34,7 +35,7 @@ app.listen(port, hostname, async () => {
 });
 
 app.get('/Gclass/get_all_assignments_with_grades', async (req, res) => {
-    const gtoken = decodeURIComponent(req.query.googleToken); // Google token passed in URL
+    const gtoken = decodeURIComponent(req.query.googleToken);
 
     const courseOptions = {
         hostname: 'classroom.googleapis.com',
@@ -57,7 +58,7 @@ app.get('/Gclass/get_all_assignments_with_grades', async (req, res) => {
             if (courseResponse.statusCode === 200) {
                 const courses = JSON.parse(courseData).courses || [];
                 if (courses.length === 0) {
-                    res.json({ message: 'No courses found.' });
+                    res.json({ assignments: [] });
                     return;
                 }
 
@@ -68,7 +69,6 @@ app.get('/Gclass/get_all_assignments_with_grades', async (req, res) => {
                     const courseId = course.id;
                     const courseName = course.name;
 
-                    // Get coursework for each course
                     const courseworkOptions = {
                         hostname: 'classroom.googleapis.com',
                         port: 443,
@@ -104,21 +104,18 @@ app.get('/Gclass/get_all_assignments_with_grades', async (req, res) => {
                     });
 
                     if (courseworkData.length === 0) {
-                        // If no assignments for this course, skip to the next course
                         coursesProcessed++;
                         if (coursesProcessed === courses.length) {
-                            res.json(assignments);
+                            res.json({ assignments });
                         }
                         continue;
                     }
 
-                    // Process assignments and get links and grades
                     for (const work of courseworkData) {
                         const courseWorkId = work.id;
                         const assignmentName = work.title;
                         const maxPoints = work.maxPoints || 0;
 
-                        // Get student submissions for each coursework
                         const submissionData = await new Promise((resolve, reject) => {
                             const submissionOptions = {
                                 hostname: 'classroom.googleapis.com',
@@ -153,35 +150,25 @@ app.get('/Gclass/get_all_assignments_with_grades', async (req, res) => {
                             submissionRequest.end();
                         });
 
-                        // Process each submission and calculate grades
                         for (const submission of submissionData) {
-                            if (submission.assignedGrade !== undefined) {
+                            // Ensure submission has a score
+                            if (submission.assignedGrade !== null) {
                                 const score = submission.assignedGrade;
-                                const grade = getGrade(score, maxPoints); // Call function to determine the grade
+                                const grade = getGrade(score, maxPoints);
 
-                                // Fetch the assignment link
-                                try {
-                                    const assignmentLink = await getAssignmentLink(gtoken, courseId, courseWorkId);
-
-                                    // Add assignment details with the link
-                                    assignments.push({
-                                        course: courseName,
-                                        assignmentName: assignmentName,
-                                        assignmentLink: assignmentLink,
-                                        grade: grade,
-                                        score: score,
-                                        totalPoints: maxPoints
-                                    });
-                                } catch (error) {
-                                    console.error(`Error fetching link for assignment ${courseWorkId}: ${error.message}`);
-                                }
+                                assignments.push({
+                                    assignmentName,
+                                    grade,
+                                    score,
+                                    totalPoints: maxPoints
+                                });
                             }
                         }
                     }
 
                     coursesProcessed++;
                     if (coursesProcessed === courses.length) {
-                        res.json(assignments);
+                        res.json({ assignments });
                     }
                 }
             } else {
@@ -672,6 +659,8 @@ app.get("/auth/googleCallback", async (req, res) => {
         }
 
         oldUser.googleClassroomToken = tokens.access_token;
+        oldUser.googleRefreshToken = tokens.refresh_token;
+        oldUser.googleTokenExp = tokens.expiresIn;
 
         const result = await client
             .db("TeachersPet")
@@ -703,6 +692,40 @@ app.get("/auth/googleCallback", async (req, res) => {
     } catch (error) {
         console.error("Error exchanging code for tokens:", error);
         return res.status(500).send("Authentication failed");
+    }
+});
+
+app.post('/auth/googleRefresh', async (req, res) => {
+    const refreshToken = req.query.refreshToken;
+    if (!refreshToken) {
+        return res.status(400).json({ error: 'refreshToken is required' });
+    }
+
+    try {
+        // Make the request to Google's OAuth token endpoint
+        const response = await post("https://oauth2.googleapis.com/token", {
+            client_id: clientId,
+            client_secret: clientSecret,
+            refresh_token: refreshToken,
+            grant_type: "refresh_token",
+        }, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        });
+
+        // Extract the relevant data
+        const { access_token, expires_in, refresh_token, token_type } = response.data;
+
+        // Return the new token, refresh token, and expiration info
+        console.log("Google Classroom Token Refreshed");
+        res.json({
+            accessToken: access_token,
+            refreshToken: refresh_token || refreshToken,
+            expiresIn: expires_in,
+            tokenType: token_type,
+        });
+    } catch (error) {
+        console.log("Error refreshing token:", error.response?.data || error.message);
+        res.status(500).json({ error: "Failed to refresh token", details: error.response?.data || error.message });
     }
 });
 
