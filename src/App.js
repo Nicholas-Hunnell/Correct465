@@ -24,6 +24,7 @@ const App = () => {
                 <Route path="/GradeReviewPage" element={<GradeReviewPage />} />
                 <Route path="/GradeHelpPage" element={<GradeHelpPage />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/GradeReviewPage_Google" element={<GradeReviewPage_Google />} />
             </Routes>
         </Router>
     );

@@ -5,13 +5,26 @@ const Home = () => {
     const location = useLocation();
     const navigate = useNavigate(); // Moved inside the component body
     const data = location.state;
-    const loggedInUser = data?.user || {}; // Use optional chaining to avoid errors if data is undefined
+    var loggedInUser = data?.user || {}; // Use optional chaining to avoid errors if data is undefined
 
     const googleClassroomRedirect = `http://localhost:3002/auth/google/${loggedInUser.id}`;
 
     const handleSettingsClick = () => {
         navigate('/settings');
     };
+
+    try{
+        refreshGoogleToken();
+        const data = location.state;
+        loggedInUser = data.user;
+    } catch (e) {
+        console.log("Error: "+e.message);
+        const queryParams = new URLSearchParams(location.search);
+        const userJson = queryParams.get('user');
+        loggedInUser = userJson ? JSON.parse(userJson) : {};
+    }
+    console.log(loggedInUser);
+
 
     return (
         <div
