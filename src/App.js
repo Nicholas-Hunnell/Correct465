@@ -9,6 +9,7 @@ import GooglePage from './Pages/LoginPageGoogle.jsx';
 import GradeReviewPage from './Pages/GradeReviewPage.jsx';
 import GradeHelpPage from './Pages/GradeHelpPage.jsx'
 import Settings from "./Pages/Settings.jsx"
+import GradeReviewPage_Google from "./Pages/GradeReviewPage_Google.jsx";
 
 const App = () => {
     return (
