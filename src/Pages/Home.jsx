@@ -132,4 +132,43 @@ const Home = () => {
     );
 };
 
+async function refreshGoogleToken() {
+    try {
+        try {
+            const googleToken = localStorage.getItem("googleToken");
+            const googleRefreshToken = localStorage.getItem("googleRefreshToken");
+            const googleTokenExp = localStorage.getItem("googleTokenExp");
+
+            const now = new Date();
+            const timestamp = now.getTime();
+
+            const result = await fetch(`http://localhost:3002/auth/googleRefresh?refreshToken=${encodeURIComponent(googleRefreshToken)}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            });
+            const responseData = await result.json();
+
+            localStorage.setItem("googleToken", responseData.accessToken);
+            localStorage.setItem("googleRefreshToken", responseData.refreshToken);
+            localStorage.setItem("googleTokenExp", responseData.expiresIn);
+
+        } catch (e) {
+            console.log("Error whole getting 'googleToken' from storage: " + e.message);
+            return 0;
+        } finally {
+            return 0;
+        }
+
+
+    } catch (e) {
+        console.log("Error while regreshing google classroom token: " + e.message);
+        return 0;
+    } finally {
+        return 0;
+    }
+
+
+}
+
+
 export default Home;

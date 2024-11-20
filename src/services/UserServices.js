@@ -197,8 +197,6 @@ app.post('/user/login', async (req, res) => {
     }
 })
 
-
-
 app.post('/user/update_last_login', async (req, res) => {
     const result = await client.db("TeachersPet").collection("LastLogin").updateOne(
         {

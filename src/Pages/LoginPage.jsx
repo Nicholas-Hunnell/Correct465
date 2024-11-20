@@ -34,6 +34,9 @@ function LoginPage() {
                 localStorage.setItem('email', data.user.Email);
                 localStorage.setItem('dashboardService', data.user.DashboardService);
                 localStorage.setItem('canvasToken', data.user.CanvasToken);
+                localStorage.setItem('googleRefreshToken', data.user.googleRefreshToken);
+                localStorage.setItem('googleToken', data.user.googleClassroomToken);
+                localStorage.setItem('googleTokenExp', data.user.googleTokenExp);
 
                 // Navigate to the home page or desired page after successful login
                 navigate('/home', { state: data });
