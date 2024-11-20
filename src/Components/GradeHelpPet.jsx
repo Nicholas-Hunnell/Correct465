@@ -27,7 +27,7 @@ const GradeHelpPet = () => {
           {loading ? "Thinking..." : speechText}
         </div>
         <img 
-          src="https://i.etsystatic.com/20628809/r/il/a121f8/2294461568/il_570xN.2294461568_3r6f.jpg" 
+          src="https://i.etsystatic.com/20628809/r/il/a121f8/2294461568/il_570xN.2294461568_3r6f.jpg"  //https://i.etsystatic.com/32921179/r/il/c93c3b/5742960641/il_1588xN.5742960641_1u1r.jpg
           alt="Animal" 
           style={styles.animalImage}
         />

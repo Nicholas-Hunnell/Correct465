@@ -1,27 +1,135 @@
 import React from 'react';
-import {useLocation} from "react-router-dom";
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Home = () => {
     const location = useLocation();
+    const navigate = useNavigate(); // Moved inside the component body
     const data = location.state;
-    const loggedInUser = data.user;
+    const loggedInUser = data?.user || {}; // Use optional chaining to avoid errors if data is undefined
 
+    const googleClassroomRedirect = `http://localhost:3002/auth/google/${loggedInUser.id}`;
 
-    var googleClassroomRedirect = "http://localhost:3002/auth/google/"+loggedInUser.id;
+    const handleSettingsClick = () => {
+        navigate('/settings');
+    };
 
     return (
-        <div>
-            <h1>My Home Screen</h1>
-            <p>
-                <a href={googleClassroomRedirect}>Connect Google Classroom Account</a>
-                <br/>
-                <a href="http://localhost:3000/GradeReviewPage/">View Canvas Grades</a>
-                <br/>
-                <a href="http://localhost:3000/GradeHelpPage/">View Grade Help</a>
-            </p>
+        <div
+            style={{
+                backgroundColor: '#87CEEB', // Sky Blue Background
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh',
+                margin: 0,
+                fontFamily: 'Arial, sans-serif',
+            }}
+        >
+            <div
+                style={{
+                    backgroundColor: '#1c1c1c', // Dark Gray Background
+                    borderRadius: '12px',
+                    padding: '40px 30px',
+                    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.5)',
+                    textAlign: 'center',
+                    maxWidth: '600px',
+                    width: '100%',
+                }}
+            >
+                {/* Header with user information and settings button */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h1 style={{ color: '#a3c9f1', marginBottom: '25px' }}>My Home Screen</h1>
+                    <div>
+                        <span style={{ marginRight: '15px', color: '#a3c9f1' }}></span>
+                        <button
+                            style={{
+                                padding: '5px 10px',
+                                backgroundColor: '#3a9ad9',
+                                color: '#000',
+                                border: 'none',
+                                borderRadius: '5px',
+                                cursor: 'pointer',
+                                fontWeight: 'bold',
+                                transition: 'background-color 0.3s',
+                            }}
+                            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
+                            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
+                            onClick={handleSettingsClick}
+                        >
+                            Settings
+                        </button>
+                    </div>
+                </div>
+
+                {/* Main content with navigation buttons */}
+                <div style={{ marginTop: '20px' }}>
+                    <p>
+                        <a
+                            href={googleClassroomRedirect}
+                            style={{
+                                display: 'inline-block',
+                                marginBottom: '10px',
+                                padding: '12px',
+                                textDecoration: 'none',
+                                color: '#000',
+                                backgroundColor: '#3a9ad9',
+                                borderRadius: '5px',
+                                fontWeight: 'bold',
+                                fontSize: '1rem',
+                                transition: 'background-color 0.3s',
+                            }}
+                            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
+                            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
+                        >
+                            Connect Google Classroom Account
+                        </a>
+                    </p>
+                    <p>
+                        <a
+                            href="http://localhost:3000/GradeReviewPage/"
+                            style={{
+                                display: 'inline-block',
+                                marginBottom: '10px',
+                                padding: '12px',
+                                textDecoration: 'none',
+                                color: '#000',
+                                backgroundColor: '#3a9ad9',
+                                borderRadius: '5px',
+                                fontWeight: 'bold',
+                                fontSize: '1rem',
+                                transition: 'background-color 0.3s',
+                            }}
+                            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
+                            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
+                        >
+                            View Canvas Grades
+                        </a>
+                    </p>
+                    <p>
+                        <a
+                            href="http://localhost:3000/GradeHelpPage/"
+                            style={{
+                                display: 'inline-block',
+                                marginBottom: '10px',
+                                padding: '12px',
+                                textDecoration: 'none',
+                                color: '#000',
+                                backgroundColor: '#3a9ad9',
+                                borderRadius: '5px',
+                                fontWeight: 'bold',
+                                fontSize: '1rem',
+                                transition: 'background-color 0.3s',
+                            }}
+                            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
+                            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
+                        >
+                            View Grade Help
+                        </a>
+                    </p>
+                </div>
+            </div>
         </div>
     );
 };
 
 export default Home;
-//test

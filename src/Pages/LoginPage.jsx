@@ -8,7 +8,7 @@ function LoginPage() {
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
 
-    // Handle login click event
+   
     const handleLoginClick = async () => {
         try {
             const response = await fetch('http://127.0.0.1:3003/user/login', {

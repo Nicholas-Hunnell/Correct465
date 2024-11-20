@@ -12,11 +12,11 @@ const jwt = require('jsonwebtoken');
 const cors = require("cors");
 app.use(cors());
 
-//mongo connection
+
 const uri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const client = new MongoClient(uri);
 
-// Start the Express server
+
 app.listen(port, hostname, () => {
     console.log(`User services server running at http://${hostname}:${port}/`);
 });
@@ -51,33 +51,41 @@ app.post('/user/create_user', async (req, res) => {
 });
 
 app.post('/user/modify_user', async (req, res) => {
-    const userId = await ObjectId.createFromHexString(req.body.id);
+    const userId = new ObjectId(req.body.id); 
 
     try {
-        const oldUserResponse = await fetch('http://127.0.0.1:3003/user/get_user_by_ID', {
+      
+        const oldUserResponse = await fetch(`http://127.0.0.1:3003/user/get_user_by_ID?id=${req.body.id}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: {'id': req.body.id}
         });
-        var oldUser = await oldUserResponse.json();
-        console.log(await oldUser);
-        oldUser.FirstName = (req.body.FirstName) ? req.body.FirstName : oldUser.FirstName;
-        oldUser.LastName = (req.body.LastName) ? req.body.LastName : oldUser.LastName;
-        oldUser.CollegeName = (req.body.CollegeName) ? req.body.CollegeName : oldUser.CollegeName;
-        oldUser.Email = (req.body.Email) ? req.body.Email : oldUser.Email;
-        oldUser.Password = (req.body.Password) ? req.body.Password : oldUser.Password;
-        oldUser.DashboardService = (req.body.DashboardService) ? req.body.DashboardService : oldUser.DashboardService;
 
-        const result = await client.db("TeachersPet").collection("Users").updateOne({_id: userId}, {$set, oldUser});
+        const oldUser = await oldUserResponse.json();
+        console.log(oldUser); 
+
+
+        oldUser.FirstName = req.body.FirstName || oldUser.FirstName;
+        oldUser.LastName = req.body.LastName || oldUser.LastName;
+        oldUser.CollegeName = req.body.CollegeName || oldUser.CollegeName;
+        oldUser.Email = req.body.Email || oldUser.Email;
+        oldUser.Password = req.body.Password || oldUser.Password;
+        oldUser.DashboardService = req.body.DashboardService || oldUser.DashboardService;
+
+
+        const result = await client.db("TeachersPet").collection("Users").updateOne(
+            { _id: userId },
+            { $set: oldUser }  
+        );
 
         res.status(200).json({
             message: 'Successfully modified user'
         });
     } catch (e) {
-        res.status(200).json({
-            message: 'Error: no user with that ID'
+        console.error(e);
+        res.status(500).json({
+            message: 'Error: could not modify user or no user with that ID',
         });
     }
 });
@@ -99,23 +107,29 @@ app.delete('/user/delete_user', async (req, res) => {
 });
 
 app.get('/user/get_user_by_ID', async (req, res) => {
-    const userId = await ObjectId.createFromHexString(req.body.id);
-    const result = await client.db("TeachersPet").collection("Users").find({_id: userId});
+    try {
+        const userId = new ObjectId(req.query.id);
 
-    const resultArr = await result.toArray();
+        const result = await client.db("TeachersPet").collection("Users").find({_id: userId});
 
-    console.log("Called get_user_by_ID");
+        const resultArr = await result.toArray();
 
-    try{
-        var userEmail = resultArr[0].Email;
-        console.log(resultArr);
-        res.status(200).json({
-            message: 'User info: ' + JSON.stringify(resultArr[0]),
-            user: resultArr[0]
-        });
+        console.log("Called get_user_by_ID");
+
+        if (resultArr.length > 0) {
+            res.status(200).json({
+                message: 'User info: ' + JSON.stringify(resultArr[0]),
+                user: resultArr[0]
+            });
+        } else {
+            res.status(404).json({
+                message: 'Error: no user with that ID'
+            });
+        }
     } catch (e) {
-        res.status(200).json({
-            message: 'Error: no user with that ID'
+        console.error('Error:', e);
+        res.status(500).json({
+            message: 'Error: invalid ID or server issue'
         });
     }
 });
@@ -150,33 +164,33 @@ app.get('/user/get_id_by_email', async (req, res) => {
     }
 });
 
-//login function used in LoginPage.jsx
+
 app.post('/user/login', async (req, res) => {
     try {
         const { Email, Password } = req.body;
 
-        // Find the user in the database
+     
         const user = await client.db("TeachersPet").collection("Users").findOne({ Email });
 
         if (!user) {
             return res.status(404).json({ message: "User does not exist in the database" });
         }
 
-        // Verify the password (Never send password to frontend)
+      
         if (Password !== user.Password) {
             return res.status(401).json({ message: "Password is incorrect" });
         }
 
-        // Generate a JWT token (you can adjust expiration as needed)
+    
         const token = jwt.sign({ userId: user._id, email: user.Email }, 'your_jwt_secret', { expiresIn: '1000000h' });
 
-        // Remove the password before sending it to the frontend for security reasons
-        const { Password: _, ...userData } = user; // Destructure to remove Password
+        
+        const { Password: _, ...userData } = user; 
 
         res.status(200).json({
             message: "Login Successful",
             token,
-            user: userData, // Send the rest of the user data
+            user: userData, 
         });
     } catch (error) {
         res.status(500).json({ message: "Error with login", error: error.message });

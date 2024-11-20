@@ -553,20 +553,20 @@ app.post('/canvas/auth/getToken', (req, res) => {
 //ATEMPT AT ThE MEGA LOOP
 
 app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
-    const { token } = req.query;  // Get only the token from query parameters
+    const { token } = req.query;  
 
-    // Check if the token is missing
+
     if (!token) {
         return res.status(400).json({
             message: 'Token is required'
         });
     }
 
-    // Use the token to get courses
+
     const courseOptions = {
-        hostname: 'canvas.instructure.com',  // Make sure the hostname is correct
+        hostname: 'canvas.instructure.com',  
         port: 443,
-        path: `/api/v1/users/self/favorites/courses?enrollment_state=active`,  // Fetch courses for the authenticated user
+        path: `/api/v1/users/self/favorites/courses?enrollment_state=active`,  
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,
