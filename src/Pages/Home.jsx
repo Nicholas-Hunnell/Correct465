@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import ViewGoogleClassroomGradesButton from "../Components/ViewGoogleClassroomGradesButton";
 
 const Home = () => {
     const location = useLocation();
@@ -139,6 +140,7 @@ const Home = () => {
                             View Grade Help
                         </a>
                     </p>
+                    <ViewGoogleClassroomGradesButton/>
                 </div>
             </div>
         </div>
