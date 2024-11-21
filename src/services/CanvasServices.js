@@ -657,7 +657,8 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
                                     assignmentName: assignment.name,
                                     grade: letterGrade,
                                     score: score,
-                                    totalPoints: totalPoints
+                                    totalPoints: totalPoints,
+                                    courseid: assignment.course_id
                                 });
                             });
                         });

@@ -64,7 +64,7 @@ const GradeDisplay = ({ token, onGradeSelect }) => {
                             className="grade-item"
                             onClick={() => onGradeSelect(grade)} // Notify parent about grade click
                         >
-                            <strong>{grade.courseName}</strong> - {grade.assignmentName}: {grade.grade} ({grade.score}/{grade.totalPoints})
+                            <strong>{grade.courseid}</strong> - {grade.assignmentName}: {grade.grade} ({grade.score}/{grade.totalPoints})
                         </div>
                     ))}
                 </div>

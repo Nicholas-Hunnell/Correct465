@@ -41,9 +41,10 @@ const Settings = () => {
         });
     };
 
-    const handleEditToggle = () => {
+    const handleEditToggle = () =>{
         setIsEditing(!isEditing);
     };
+
 
     const handleSave = async () => {
         try {
@@ -59,7 +60,9 @@ const Settings = () => {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save user information');
+                const errorData = await response.json();
+                alert(errorData.message); // Show specific error message
+                return;
             }
 
             setIsEditing(false);
@@ -94,13 +97,13 @@ const Settings = () => {
             <div
                 style={{
                     backgroundColor: '#1c1c1c',
-                    padding: '20px',
+                    padding: '30px',
                     borderRadius: '8px',
                     color: '#a3c9f1',
                 }}
             >
-                <label style={{ display: 'block', marginBottom: '10px' }}>
-                    Name:
+                <label style={{display: 'block', marginBottom: '10px'}}>
+                    First Name:
                     <input
                         type="text"
                         name="FirstName"
@@ -119,7 +122,7 @@ const Settings = () => {
                         }}
                     />
                 </label>
-                <label style={{ display: 'block', marginBottom: '10px' }}>
+                <label style={{display: 'block', marginBottom: '10px'}}>
                     Last Name:
                     <input
                         type="text"
@@ -139,12 +142,72 @@ const Settings = () => {
                         }}
                     />
                 </label>
-                <label style={{ display: 'block', marginBottom: '10px' }}>
+                <label style={{display: 'block', marginBottom: '10px'}}>
                     Email:
                     <input
                         type="email"
                         name="Email"
                         value={editableUser.Email || ''}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '5px',
+                            border: '1px solid #333',
+                            backgroundColor: isEditing ? '#2b2b2b' : '#1c1c1c',
+                            color: '#a3c9f1',
+                            outline: 'none',
+                            marginTop: '5px',
+                        }}
+                    />
+                </label>
+                <label style={{display: 'block', marginBottom: '10px'}}>
+                    Password:
+                    <input
+                        type="password"
+                        name="Password"
+                        value={editableUser.Password || ''}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '5px',
+                            border: '1px solid #333',
+                            backgroundColor: isEditing ? '#2b2b2b' : '#1c1c1c',
+                            color: '#a3c9f1',
+                            outline: 'none',
+                            marginTop: '5px',
+                        }}
+                    />
+                </label>
+                <label style={{display: 'block', marginBottom: '10px'}}>
+                    School Name:
+                    <input
+                        type="CollegeName"
+                        name="CollegeName"
+                        value={editableUser.CollegeName || ''}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '5px',
+                            border: '1px solid #333',
+                            backgroundColor: isEditing ? '#2b2b2b' : '#1c1c1c',
+                            color: '#a3c9f1',
+                            outline: 'none',
+                            marginTop: '5px',
+                        }}
+                    />
+                </label>
+                <label style={{display: 'block', marginBottom: '10px'}}>
+                    Canvas Token:
+                    <input
+                        type="CanvasToken"
+                        name="CanvasToken"
+                        value={editableUser.CanvasToken || ''}
                         onChange={handleInputChange}
                         disabled={!isEditing}
                         style={{

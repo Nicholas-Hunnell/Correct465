@@ -51,41 +51,56 @@ app.post('/user/create_user', async (req, res) => {
 });
 
 app.post('/user/modify_user', async (req, res) => {
-    const userId = new ObjectId(req.body.id); 
+    const userId = new ObjectId(req.body.id);
 
     try {
-      
-        const oldUserResponse = await fetch(`http://127.0.0.1:3003/user/get_user_by_ID?id=${req.body.id}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+        // Check if the email is already in use by another user
+        const emailTaken = await client.db("TeachersPet").collection("Users").findOne({
+            Email: req.body.Email,
+            _id: { $ne: userId }, // Ensure it's not the same user
         });
 
-        const oldUser = await oldUserResponse.json();
-        console.log(oldUser); 
+        if (emailTaken) {
+            return res.status(400).json({
+                message: `Error: Email ${req.body.Email} is already in use.`,
+            });
+        }
 
+        // Fetch the current user data
+        const currentUser = await client.db("TeachersPet").collection("Users").findOne({ _id: userId });
 
-        oldUser.FirstName = req.body.FirstName || oldUser.FirstName;
-        oldUser.LastName = req.body.LastName || oldUser.LastName;
-        oldUser.CollegeName = req.body.CollegeName || oldUser.CollegeName;
-        oldUser.Email = req.body.Email || oldUser.Email;
-        oldUser.Password = req.body.Password || oldUser.Password;
-        oldUser.DashboardService = req.body.DashboardService || oldUser.DashboardService;
+        if (!currentUser) {
+            return res.status(404).json({
+                message: 'Error: User not found.',
+            });
+        }
 
+        // Update fields only if provided
+        const updatedUser = {
+            ...currentUser,
+            FirstName: req.body.FirstName || currentUser.FirstName,
+            LastName: req.body.LastName || currentUser.LastName,
+            CollegeName: req.body.CollegeName || currentUser.CollegeName,
+            Email: req.body.Email || currentUser.Email,
+            Password: req.body.Password || currentUser.Password,
+            DashboardService: req.body.DashboardService || currentUser.DashboardService,
+            CanvasToken: req.body.CanvasToken || currentUser.CanvasToken,
+            googleClassroomToken: req.body.googleClassroomToken || currentUser.googleClassroomToken,
+        };
 
-        const result = await client.db("TeachersPet").collection("Users").updateOne(
+        // Update user in the database
+        await client.db("TeachersPet").collection("Users").updateOne(
             { _id: userId },
-            { $set: oldUser }  
+            { $set: updatedUser }
         );
 
         res.status(200).json({
-            message: 'Successfully modified user'
+            message: 'Successfully modified user',
         });
     } catch (e) {
-        console.error(e);
+        console.error('Error modifying user:', e);
         res.status(500).json({
-            message: 'Error: could not modify user or no user with that ID',
+            message: 'Error: Could not modify user',
         });
     }
 });
@@ -169,28 +184,28 @@ app.post('/user/login', async (req, res) => {
     try {
         const { Email, Password } = req.body;
 
-     
+
         const user = await client.db("TeachersPet").collection("Users").findOne({ Email });
 
         if (!user) {
             return res.status(404).json({ message: "User does not exist in the database" });
         }
 
-      
+
         if (Password !== user.Password) {
             return res.status(401).json({ message: "Password is incorrect" });
         }
 
-    
+
         const token = jwt.sign({ userId: user._id, email: user.Email }, 'your_jwt_secret', { expiresIn: '1000000h' });
 
-        
-        const { Password: _, ...userData } = user; 
+
+        const { Password: _, ...userData } = user;
 
         res.status(200).json({
             message: "Login Successful",
             token,
-            user: userData, 
+            user: userData,
         });
     } catch (error) {
         res.status(500).json({ message: "Error with login", error: error.message });
