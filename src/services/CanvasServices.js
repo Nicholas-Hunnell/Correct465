@@ -550,9 +550,69 @@ app.post('/canvas/auth/getToken', (req, res) => {
         message: 'Successfully called canvas/getToken'
     });
 })
+
+function fetchCourseName(token, courseId) {
+    return new Promise((resolve, reject) => {
+        const courseOptions = {
+            hostname: 'canvas.instructure.com',
+            port: 443,
+            path: `/api/v1/courses/${courseId}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json+canvas-string-ids'
+            }
+        };
+
+        const courseRequest = https.request(courseOptions, courseResponse => {
+            let courseData = '';
+
+            courseResponse.on('data', chunk => {
+                courseData += chunk;
+            });
+
+            courseResponse.on('end', () => {
+                if (courseResponse.statusCode === 200) {
+                    try {
+                        const course = JSON.parse(courseData);
+                        resolve(course.name);
+                    } catch (error) {
+                        reject({
+                            status: 500,
+                            message: 'Error parsing course response',
+                            error: error.message
+                        });
+                    }
+                } else {
+                    reject({
+                        status: courseResponse.statusCode,
+                        message: 'Error retrieving course name',
+                        error: courseData
+                    });
+                }
+            });
+        });
+
+        courseRequest.on('error', error => {
+            reject({
+                status: 500,
+                message: 'Error connecting to Canvas API',
+                error: error.message
+            });
+        });
+
+        courseRequest.end();
+    });
+}
+
+
+
+
+
 //ATEMPT AT ThE MEGA LOOP
 
-app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
+
+app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm!!', (req, res) => {
     const { token } = req.query;  
 
 
@@ -645,6 +705,7 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
                                 const submission = assignment.submission;
                                 const totalPoints = assignment.points_possible || 0;
                                 const score = submission ? submission.score : 0;
+                                const CourseName = fetchCourseName(token, data.course_id)
 
                                 let letterGrade = 'Not graded';
                                 if (totalPoints > 0 && submission) {
@@ -657,7 +718,8 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', (req, res) => {
                                     assignmentName: assignment.name,
                                     grade: letterGrade,
                                     score: score,
-                                    totalPoints: totalPoints
+                                    totalPoints: totalPoints,
+                                    courseid: CourseName
                                 });
                             });
                         });
@@ -701,3 +763,173 @@ function getLetterGrade(percentage) {
     if (percentage >= 60) return 'D';
     return 'F';
 }
+
+app.get('/canvas/get_course_name', (req, res) => {
+    const { token, course_id } = req.query;
+
+    // Validate input
+    if (!token) {
+        return res.status(400).json({ message: 'Token is required' });
+    }
+
+    if (!course_id) {
+        return res.status(400).json({ message: 'Course ID is required' });
+    }
+
+    // Canvas API options
+    const courseOptions = {
+        hostname: 'canvas.instructure.com', 
+        port: 443,
+        path: `/api/v1/courses/${course_id}`, 
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json+canvas-string-ids'
+        }
+    };
+
+    // Make the request to Canvas API
+    const courseRequest = https.request(courseOptions, courseResponse => {
+        let courseData = '';
+
+        courseResponse.on('data', chunk => {
+            courseData += chunk;
+        });
+
+        courseResponse.on('end', () => {
+            if (courseResponse.statusCode === 200) {
+                try {
+                    const course = JSON.parse(courseData);
+                    res.status(200).json({
+                        courseName: course.name,
+                        courseCode: course.course_code
+                    });
+                } catch (error) {
+                    res.status(500).json({
+                        message: 'Error parsing response',
+                        error: error.message
+                    });
+                }
+            } else {
+                res.status(courseResponse.statusCode).json({
+                    message: 'Error retrieving course',
+                    status: courseResponse.statusCode,
+                    error: courseData
+                });
+            }
+        });
+    });
+
+    // Handle request errors
+    courseRequest.on('error', error => {
+        res.status(500).json({
+            message: 'Error connecting to Canvas API',
+            error: error.message
+        });
+    });
+
+    courseRequest.end();
+})
+
+app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', async (req, res) => {
+    const { token } = req.query;
+
+    if (!token) {
+        return res.status(400).json({
+            message: 'Token is required'
+        });
+    }
+
+    const courseOptions = {
+        hostname: 'canvas.instructure.com',
+        port: 443,
+        path: `/api/v1/users/self/favorites/courses?enrollment_state=active`,
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json+canvas-string-ids'
+        }
+    };
+
+    try {
+        const coursesData = await new Promise((resolve, reject) => {
+            const req = https.request(courseOptions, res => {
+                let data = '';
+                res.on('data', chunk => (data += chunk));
+                res.on('end', () => {
+                    if (res.statusCode === 200) {
+                        resolve(JSON.parse(data));
+                    } else {
+                        reject({ status: res.statusCode, error: data });
+                    }
+                });
+            });
+            req.on('error', error => reject({ status: 500, error: error.message }));
+            req.end();
+        });
+
+        const assignmentsWithGrades = [];
+
+        for (const course of coursesData) {
+            if (course.id) {
+                const assignmentsData = await new Promise((resolve, reject) => {
+                    const assignmentOptions = {
+                        hostname: 'psu.instructure.com',
+                        port: 443,
+                        path: `/api/v1/courses/${course.id}/assignments?include[]=submission&include[]=grading`,
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json+canvas-string-ids'
+                        }
+                    };
+
+                    const req = https.request(assignmentOptions, res => {
+                        let data = '';
+                        res.on('data', chunk => (data += chunk));
+                        res.on('end', () => {
+                            if (res.statusCode === 200) {
+                                resolve(JSON.parse(data));
+                            } else {
+                                reject({ status: res.statusCode, error: data });
+                            }
+                        });
+                    });
+                    req.on('error', error => reject({ status: 500, error: error.message }));
+                    req.end();
+                });
+
+                for (const assignment of assignmentsData) {
+                    const courseName = await fetchCourseName(token, course.id);
+
+                    const submission = assignment.submission;
+                    const totalPoints = assignment.points_possible || 0;
+                    const score = submission ? submission.score : 0;
+
+                    let letterGrade = 'Not graded';
+                    if (totalPoints > 0 && submission) {
+                        const percentage = (score / totalPoints) * 100;
+                        letterGrade = getLetterGrade(percentage);
+                    }
+
+                    assignmentsWithGrades.push({
+                        courseName,
+                        assignmentName: assignment.name,
+                        grade: letterGrade,
+                        score,
+                        totalPoints,
+                        courseId: courseName
+                    });
+                }
+            }
+        }
+
+        res.status(200).json({ assignments: assignmentsWithGrades });
+    } catch (error) {
+        res.status(error.status || 500).json({
+            message: 'An error occurred',
+            error: error.error || error.message
+        });
+    }
+});
+
