@@ -157,6 +157,7 @@ app.get('/Gclass/get_all_assignments_with_grades', async (req, res) => {
                                 const grade = getGrade(score, maxPoints);
 
                                 assignments.push({
+                                    courseName, // Include the course name
                                     assignmentName,
                                     grade,
                                     score,

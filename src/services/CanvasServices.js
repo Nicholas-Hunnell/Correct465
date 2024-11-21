@@ -156,6 +156,9 @@ app.get('/canvas/get_all_course_ids', (req, res) => {
 });
 
 app.get('/canvas/get_grades', (req, res) => {
+    const { token } = req.query;
+
+
     const options = {
         hostname: canvasHost,
         port: 443,

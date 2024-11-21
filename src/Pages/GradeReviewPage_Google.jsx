@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import GradesDisplay from '../Components/GradeDisplay';
 import * as PropTypes from "prop-types";
 import GradeDisplay_Google from '../Components/GradeDisplay_Google.jsx'; // Import the GradesDisplay component
-
-
-function GradesDisplay_Google(props) {
-    return null;
-}
+import OverallGoogleGrades from '../Components/OverallGoogleGrades.jsx';
 
 const GradeReviewPage = () => {
     const token = localStorage.getItem('googleToken');
@@ -40,10 +36,15 @@ const GradeReviewPage = () => {
 
     return (
         <div style={styles.pageContainer}>
-            {/* Left container with grades and any other relevant components */}
+            {/* Far-left container with OverallGoogleGrades */}
+            <div style={styles.farLeftContainer}>
+                <OverallGoogleGrades token={token}/>
+            </div>
+
+            {/* Middle container with grades and other components */}
             <div style={styles.leftContainer}>
                 <h1>Google Classroom Grades</h1>
-                <GradeDisplay_Google token={token} onGradeSelect={handleGradeSelection} />
+                <GradeDisplay_Google token={token} onGradeSelect={handleGradeSelection}/>
             </div>
 
             {/* Right container with the gif based on the selected grade */}
@@ -78,23 +79,35 @@ const getGifForGrade = (grade) => {
 const styles = {
     pageContainer: {
         display: 'flex',
-        justifyContent: 'space-between',
+        flexDirection: 'row',
         alignItems: 'center',
-        height: '100vh',
-        padding: '20px',
+        width: '100%',
+        gap: '16px', // Optional: adds space between containers
+    },
+    farLeftContainer: {
+        flex: '0 0 150px', // Fixed width or proportion for far-left container
+        padding: '16px',
+        backgroundColor: '#f5f5f5', // Optional styling
+        borderRight: '1px solid #ccc', // Optional: separate visually
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     leftContainer: {
-        flex: 1,
-        textAlign: 'center',
+        flex: '1',
+        padding: '16px',
+        backgroundColor: '#ffffff', // Optional
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     rightContainer: {
-        flex: 1,
-        display: 'flex',
+        flex: '1',
+        padding: '16px',
+        textAlign: 'center',
         justifyContent: 'center',
         alignItems: 'center',
     },
     gif: {
-        width: '300px',
+        maxWidth: '300px',
         height: 'auto',
     },
 };
