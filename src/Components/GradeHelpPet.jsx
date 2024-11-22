@@ -1,24 +1,46 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 
-const GradeHelpPet = () => {
-  const [speechText, setSpeechText] = useState("Click to generate speech!");
+const GradeHelpPet = ({ selectedGrade }) => {
+  const [speechText, setSpeechText] = useState("Click on a grade to generate speech!");
   const [loading, setLoading] = useState(false);
 
-  const handleClick = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.post('/GradeHelp/generate-content', {
-        prompt: 'Tell me something about animals'
-      });
-      setSpeechText(response.data.response);
-    } catch (error) {
-      console.error("Error fetching content:", error);
-      setSpeechText("Oops! Something went wrong.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    console.log(selectedGrade)
+    const fetchSpeech = async () => {
+      if (!selectedGrade) {
+        setSpeechText("Click on a grade to generate speech!");
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const prompt = `In three lines can you give me three websites and links that will help with ${selectedGrade.assignmentName}, in the course: ${selectedGrade.courseName}. If you are unsure just respond with websites that help with any course work, Dont respond with anything els ebut the websites names,  and an intro stating These three websites willl help you in assignment name in course name`;
+
+
+        const response = await fetch('http://127.0.0.1:3004/GradeHelp/generate-content', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prompt: prompt }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch content');
+        }
+
+        const data = await response.json();
+        setSpeechText(data.response);
+      } catch (error) {
+        console.error("Error fetching content:", error);
+        setSpeechText("Oops! Something went wrong.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSpeech();
+  }, [selectedGrade]);
 
   return (
     <div style={styles.pageContainer}>
@@ -26,16 +48,11 @@ const GradeHelpPet = () => {
         <div style={styles.speechBubble}>
           {loading ? "Thinking..." : speechText}
         </div>
-        <img 
-          src="https://i.etsystatic.com/20628809/r/il/a121f8/2294461568/il_570xN.2294461568_3r6f.jpg"  //https://i.etsystatic.com/32921179/r/il/c93c3b/5742960641/il_1588xN.5742960641_1u1r.jpg
-          alt="Animal" 
+        <img
+          src="https://i.etsystatic.com/20628809/r/il/a121f8/2294461568/il_570xN.2294461568_3r6f.jpg"
+          alt="Animal"
           style={styles.animalImage}
         />
-      </div>
-      <div style={styles.rightContainer}>
-        <button onClick={handleClick} style={styles.button}>
-          Generate Speech
-        </button>
       </div>
     </div>
   );
@@ -54,16 +71,10 @@ const styles = {
     flex: 1,
     textAlign: 'center',
   },
-  rightContainer: {
-    flex: 1,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   animalImage: {
     width: '200px',
     height: 'auto',
-    marginTop: '20px', // Adds space between the speech bubble and the image
+    marginTop: '20px',
   },
   speechBubble: {
     position: 'absolute',
@@ -75,14 +86,14 @@ const styles = {
     border: '2px solid #000',
     borderRadius: '10px',
     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-    maxWidth: '200px',
+    maxWidth: '90%', // Adjust to fit smaller screens
+    maxHeight: '50%', // Prevents overflow
+    overflow: 'auto', // Adds scroll if needed
     fontSize: '16px',
+    wordWrap: 'break-word', // Handles long text
+    overflowWrap: 'break-word', // Alternative for word wrapping
   },
-  button: {
-    padding: '10px 20px',
-    fontSize: '16px',
-    cursor: 'pointer',
-  }
 };
+
 
 export default GradeHelpPet;
