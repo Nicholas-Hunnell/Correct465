@@ -2,18 +2,25 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ViewGoogleClassroomGradesButton from "../Components/ViewGoogleClassroomGradesButton";
 
+let userId = null;
+let canvasToken = null;
+
 const Home = () => {
     const location = useLocation();
     const navigate = useNavigate(); // Moved inside the component body
     const data = location.state;
     var loggedInUser = data?.user || {}; // Use optional chaining to avoid errors if data is undefined
-
+    userId = loggedInUser._id; // Extract and assign the user ID (from `_id` field)
+    canvasToken = loggedInUser.CanvasToken; // Extract and assign the CanvasToken
     const googleClassroomRedirect = `http://localhost:3002/auth/google/${loggedInUser.id}`;
 
     const handleSettingsClick = () => {
         navigate('/settings');
     };
-
+    const handleAwardsClick = () => {
+        // Navigate to the awards page
+        navigate('/Awards', { state: { userId, canvasToken } });
+    };
     try{
         refreshGoogleToken();
         const data = location.state;
@@ -24,7 +31,9 @@ const Home = () => {
         const userJson = queryParams.get('user');
         loggedInUser = userJson ? JSON.parse(userJson) : {};
     }
-    console.log(loggedInUser);
+    console.log("Logged in User:", loggedInUser);
+    console.log("User ID:", userId); // Log the extracted user ID
+    console.log("Canvas Token:", canvasToken); // Log the extracted CanvasToken
 
 
     return (
@@ -140,6 +149,27 @@ const Home = () => {
                             View Grade Help
                         </a>
                     </p>
+                    <p>
+                        <button
+                            style={{
+                                padding: '12px',
+                                marginBottom: '10px',
+                                backgroundColor: '#3a9ad9',
+                                color: '#000',
+                                border: 'none',
+                                borderRadius: '5px',
+                                cursor: 'pointer',
+                                fontWeight: 'bold',
+                                fontSize: '1rem',
+                                transition: 'background-color 0.3s',
+                            }}
+                            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
+                            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
+                            onClick={handleAwardsClick}
+                        >
+                            Go to Awards Page
+                        </button>
+                    </p>
                     <ViewGoogleClassroomGradesButton/>
                 </div>
             </div>
@@ -187,3 +217,4 @@ async function refreshGoogleToken() {
 
 
 export default Home;
+export { userId, canvasToken };
