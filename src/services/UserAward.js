@@ -1,21 +1,28 @@
 const express = require('express');
 const axios = require('axios'); // For calling the get_grades API
 const { MongoClient } = require('mongodb');
-const cors = require('cors')
+const cors = require('cors');
 
-const router = express();
+const app = express();
 const canvasHost = 'http://127.0.0.1:3001'; // Base URL of your server.js
 const mongoUri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const hostname = '127.0.0.1';
-const port = 3005
+const port = 3005;
+
 // MongoDB Client
 const client = new MongoClient(mongoUri);
+
+// CORS Options
 const corsOptions = {
     origin: 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Specify allowed methods
-    allowedHeaders: ['Authorization', 'Content-Type'],  // Allow specific headers
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
+    allowedHeaders: ['Authorization', 'Content-Type'], // Allow specific headers
 };
-router.use(cors(corsOptions))
+
+app.use(cors(corsOptions)); // Apply CORS middleware
+app.use(express.json()); // Middleware for parsing JSON request bodies
+
+// MongoDB Connection
 const connectToMongo = async () => {
     try {
         if (!client.isConnected()) {
@@ -35,14 +42,13 @@ const categorizeAwards = (grades) => {
         const { course, grade } = gradeInfo;
 
         let category;
-        if (grade >= 90) {
-            category = "Excellence";
-        } else if (grade >= 75) {
-            category = "Honor Roll";
-        } else if (grade >= 50) {
-            category = "Participation";
+
+        if (['A+', 'A', 'A-'].includes(grade)) {
+            category = 1; // Excellence
+        } else if (['B+', 'B', 'B-'].includes(grade)) {
+            category = 2; // Honor Roll
         } else {
-            category = "Needs Improvement";
+            category = 3; // Participation
         }
 
         awards.push({ course, grade, category });
@@ -50,10 +56,9 @@ const categorizeAwards = (grades) => {
 
     return awards;
 };
-router.listen(port, hostname, () => {    console.log(`User Award is running at http://${hostname}:${port}/`);})
 
 // Endpoint to process awards
-router.post('/awards/process', async (req, res) => {
+app.post('/awards/process', async (req, res) => {
     const { token, userId } = req.body;
 
     if (!token || !userId) {
@@ -71,7 +76,7 @@ router.post('/awards/process', async (req, res) => {
             const gradeDetails = grades.map((gradeString) => {
                 const [coursePart, gradePart] = gradeString.split(', Grades: ');
                 const course = coursePart.replace('Course: ', '').trim();
-                const grade = parseFloat(gradePart.trim()) || 0; // Convert grade to a number
+                const grade = gradePart.trim(); // Use grade directly as a letter grade
                 return { course, grade };
             });
 
@@ -79,7 +84,7 @@ router.post('/awards/process', async (req, res) => {
 
             // Connect to MongoDB and insert awards
             await connectToMongo();
-            const db = client.db('CanvasAwardsDB');
+            const db = client.db('TeachersPet');
             const collection = db.collection('UserAwards');
 
             const result = await collection.insertOne({
@@ -104,4 +109,7 @@ router.post('/awards/process', async (req, res) => {
     }
 });
 
-module.exports = router;
+// Start the server
+app.listen(port, hostname, () => {
+    console.log(`User Award service is running at http://${hostname}:${port}/`);
+});
