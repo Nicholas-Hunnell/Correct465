@@ -18,8 +18,7 @@ const Home = () => {
         navigate('/settings');
     };
     const handleAwardsClick = () => {
-        // Navigate to the awards page
-        navigate('/Awards', { state: { userId, canvasToken } });
+        navigate('/UserAwards', { state: { userId } });
     };
     try{
         refreshGoogleToken();

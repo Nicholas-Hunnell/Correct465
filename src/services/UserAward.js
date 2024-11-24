@@ -108,6 +108,30 @@ app.post('/awards/process', async (req, res) => {
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 });
+app.get('/awards/view', async (req, res) => {
+    try {
+        // Connect to MongoDB
+        await connectToMongo();
+        const db = client.db('TeachersPet');
+        const collection = db.collection('UserAwards');
+
+        // Fetch awards for all users (or filter by userId if needed)
+        const userAwards = await collection.find({}).toArray();
+
+        res.json({
+            success: true,
+            data: userAwards,
+        });
+    } catch (error) {
+        console.error('Error fetching UserAwards:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message,
+        });
+    }
+});
+
 
 // Start the server
 app.listen(port, hostname, () => {
