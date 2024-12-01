@@ -124,13 +124,13 @@ const Settings = () => {
             <div
                 style={{
                     backgroundColor: '#1c1c1c',
-                    padding: '20px',
+                    padding: '40px',
                     borderRadius: '8px',
                     color: '#a3c9f1',
                 }}
             >
-                <label style={{ display: 'block', marginBottom: '10px' }}>
-                    Name:
+                <label style={{display: 'block', marginBottom: '10px'}}>
+                    First Name:
                     <input
                         type="text"
                         name="FirstName"
@@ -149,7 +149,8 @@ const Settings = () => {
                         }}
                     />
                 </label>
-                <label style={{ display: 'block', marginBottom: '10px' }}>
+
+                <label style={{display: 'block', marginBottom: '10px'}}>
                     Last Name:
                     <input
                         type="text"
@@ -169,7 +170,27 @@ const Settings = () => {
                         }}
                     />
                 </label>
-                <label style={{ display: 'block', marginBottom: '10px' }}>
+                <label style={{display: 'block', marginBottom: '10px'}}>
+                    School Name:
+                    <input
+                        type="text"
+                        name="SchoolName"
+                        value={editableUser.CollegeName || ''}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '5px',
+                            border: '1px solid #333',
+                            backgroundColor: isEditing ? '#2b2b2b' : '#1c1c1c',
+                            color: '#a3c9f1',
+                            outline: 'none',
+                            marginTop: '5px',
+                        }}
+                    />
+                </label>
+                <label style={{display: 'block', marginBottom: '10px'}}>
                     Email:
                     <input
                         type="email"
@@ -189,7 +210,49 @@ const Settings = () => {
                         }}
                     />
                 </label>
-                <div style={{ marginTop: '20px' }}>
+                <label style={{display: 'block', marginBottom: '10px'}}>
+                    Password:
+                    <input
+                        type="text"
+                        name="password"
+                        value={editableUser.Password || ''}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '5px',
+                            border: '1px solid #333',
+                            backgroundColor: isEditing ? '#2b2b2b' : '#1c1c1c',
+                            color: '#a3c9f1',
+                            outline: 'none',
+                            marginTop: '5px',
+                        }}
+                    />
+                </label>
+
+                <label style={{display: 'block', marginBottom: '10px'}}>
+                    Canvas Token:
+                    <input
+                        type="text"
+                        name="CanvasToken"
+                        value={editableUser.CanvasToken || ''}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '5px',
+                            border: '1px solid #333',
+                            backgroundColor: isEditing ? '#2b2b2b' : '#1c1c1c',
+                            color: '#a3c9f1',
+                            outline: 'none',
+                            marginTop: '5px',
+                        }}
+                    />
+                </label>
+
+                <div style={{marginTop: '20px'}}>
                     <button
                         onClick={() => isEditing && setShowGifEditor(!showGifEditor)}
                         style={{
@@ -210,12 +273,13 @@ const Settings = () => {
                         Edit Cat Gifs
                     </button>
                     {showGifEditor && (
-                        <div style={{ marginTop: '20px' }}>
-                            <p style={{ marginBottom: '10px', color: '#a3c9f1' }}>
-                                Paste the image/GIF URLs below. Each image/GIF will appear when you select the respective grade.
+                        <div style={{marginTop: '20px'}}>
+                            <p style={{marginBottom: '10px', color: '#a3c9f1'}}>
+                                Paste the image/GIF URLs below. Each image/GIF will appear when you select the
+                                respective grade.
                             </p>
                             {['A', 'B', 'C', 'D', 'F'].map((field) => (
-                                <label key={field} style={{ display: 'block', marginBottom: '10px' }}>
+                                <label key={field} style={{display: 'block', marginBottom: '10px'}}>
                                     {field}:
                                     <input
                                         type="text"
