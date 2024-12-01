@@ -935,4 +935,3 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', async (req, res) =>
         });
     }
 });
-

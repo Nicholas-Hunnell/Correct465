@@ -1,113 +1,136 @@
 const express = require('express');
-const { MongoClient } = require("mongodb");
+const axios = require('axios');
+const { MongoClient, ObjectId } = require('mongodb');
+const cors = require('cors');
 
 const app = express();
+const canvasHost = 'http://127.0.0.1:3001'; // Base URL of your server.js
+const mongoUri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=true&w=majority";
+const hostname = '127.0.0.1';
+const port = 3005;
+
+// MongoDB Client
+const client = new MongoClient(mongoUri);
+
+// CORS Options
+const corsOptions = {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Authorization', 'Content-Type'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
-const uri = "mongodb+srv://admin:<db_password>@cluster0.lv5o6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-const client = new MongoClient(uri);
-
-// Function to update award category in MongoDB
-async function updateAwardCategory(userId, awardId) {
-    try {
+// Connect to MongoDB
+const connectToMongo = async () => {
+    if (!client.topology || !client.topology.isConnected()) {
         await client.connect();
-        const collection = client.db("TeachersPet").collection("UserAwards");
-
-        // Update the award category to 1 if the student has an "A" grade
-        const result = await collection.updateOne(
-            { UserId: userId, AwardId: awardId },
-            { $set: { Category: 1 } },
-            { upsert: true }
-        );
-
-        return result;
-    } catch (error) {
-        console.error("Error updating award category:", error);
-    } finally {
-        await client.close();
+        console.log("Connected to MongoDB");
     }
-}
+};
 
-// Helper function to call the Canvas grades API
-async function fetchCanvasGrades() {
-    try {
-        const response = await axios.get('http://127.0.0.1:3001/canvas/get_grades');
-        const data = response.data;
-        
-        // Check if any course has an "A" grade based on your API structure
-        const hasA = data.includes("Grade: A");  // Modify this line if grades are returned in a different format
-        return hasA;
-    } catch (error) {
-        console.error("Error fetching Canvas grades:", error.message);
-        throw error;
-    }
-}
+// Award Categories Logic
+const categorizeAwards = (grades) => {
+    const awards = [];
 
-// Helper function to call the Google Classroom grades API
-async function fetchGoogleClassroomGrades() {
-    try {
-        const response = await axios.get('http://127.0.0.1:3002/Gclass/get_grades');
-        const data = response.data;
-        
-        // Assuming grades are returned similarly to Canvas in a format where "Grade: A" exists
-        const hasA = data.includes("Grade: A");  // Modify this based on actual response structure
-        return hasA;
-    } catch (error) {
-        console.error("Error fetching Google Classroom grades:", error.message);
-        throw error;
-    }
-}
+    grades.forEach((gradeInfo) => {
+        const { course, grade } = gradeInfo;
 
-app.post('/award/update', async (req, res) => {
-    const { email, awardId } = req.body;
+        let category;
 
-    try {
-        // Connect to MongoDB
-        await client.connect();
-        const usersCollection = client.db("TeachersPet").collection("Users");
-        const awardsCollection = client.db("TeachersPet").collection("UserAwards");
-
-        // Find the user by email (or modify to use another identifier if needed)
-        const user = await usersCollection.findOne({ Email: email });
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
-
-        // Extract the UserId
-        const userId = user._id.toString();
-
-        // Check grades and update the award category if applicable
-        const canvasHasA = await fetchCanvasGrades();
-        const googleClassroomHasA = await fetchGoogleClassroomGrades();
-
-        if (canvasHasA || googleClassroomHasA) {
-            const result = await awardsCollection.updateOne(
-                { UserId: userId, AwardId: awardId },
-                { $set: { Category: 1 } },
-                { upsert: true }
-            );
-
-            if (result.modifiedCount > 0 || result.upsertedCount > 0) {
-                res.status(200).json({ message: "Award category updated successfully." });
-            } else {
-                res.status(500).json({ message: "Failed to update award category." });
-            }
+        if (['A+', 'A', 'A-'].includes(grade)) {
+            category = 1; // Excellence
+        } else if (['B+', 'B', 'B-'].includes(grade)) {
+            category = 2; // Honor Roll
         } else {
-            res.status(200).json({ message: "No 'A' grade found; no update made." });
+            category = 3; // Participation
+        }
+
+        awards.push({ course, grade, category });
+    });
+
+    return awards;
+};
+
+// Endpoint to process awards
+app.post('/awards/process', async (req, res) => {
+    const { token, userId } = req.body;
+
+    if (!token || !userId) {
+        return res.status(400).json({ message: "Token and userId are required" });
+    }
+
+    try {
+        // Call the get_grades endpoint
+        const response = await axios.get(`${canvasHost}/canvas/get_grades`, { params: { token } });
+
+        if (response.status === 200) {
+            const { grades } = response.data;
+
+            // Process grades into award categories
+            const gradeDetails = grades.map((gradeString) => {
+                const [coursePart, gradePart] = gradeString.split(', Grades: ');
+                const course = coursePart.replace('Course: ', '').trim();
+                const grade = gradePart.trim();
+                return { course, grade };
+            });
+
+            const awards = categorizeAwards(gradeDetails);
+
+            // Connect to MongoDB and insert awards
+            await connectToMongo();
+            const db = client.db('TeachersPet');
+            const collection = db.collection('UserAwards');
+
+            const result = await collection.insertOne({
+                userId: new ObjectId(userId), // Store userId as ObjectId
+                awards,
+                createdAt: new Date(),
+            });
+
+            res.json({
+                message: "Awards processed and published successfully",
+                resultId: result.insertedId,
+            });
+        } else {
+            res.status(response.status).json({
+                message: "Error fetching grades",
+                error: response.data,
+            });
         }
     } catch (error) {
-        console.error("Error updating award category:", error);
-        res.status(500).json({ message: "Error updating award category", error: error.message });
-    } finally {
-        await client.close();
+        console.error("Error processing awards:", error);
+        res.status(500).json({ message: "Internal server error", error: error.message });
     }
 });
 
+// Endpoint to view awards
+app.get('/awards/view', async (req, res) => {
+    const { userId } = req.query;
 
-const port = 3000;
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    if (!userId) {
+        return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    try {
+        await connectToMongo();
+        const db = client.db('TeachersPet');
+        const collection = db.collection('UserAwards');
+
+        const userAwards = await collection.findOne({ userId: new ObjectId(userId) });
+        if (!userAwards) {
+            return res.status(404).json({ success: false, message: 'No awards found for this user' });
+        }
+
+        res.json({ success: true, data: userAwards.awards });
+    } catch (error) {
+        console.error('Error fetching UserAwards:', error);
+        res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
+    }
 });
 
-//test
+// Start the server
+app.listen(port, hostname, () => {
+    console.log(`User Award service is running at http://${hostname}:${port}/`);
+});
