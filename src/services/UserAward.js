@@ -30,7 +30,6 @@ const connectToMongo = async () => {
     }
 };
 
-// Award Categories Logic
 const categorizeAwards = (grades) => {
     const awards = [];
 
@@ -39,12 +38,37 @@ const categorizeAwards = (grades) => {
 
         let category;
 
-        if (['A+', 'A', 'A-'].includes(grade)) {
-            category = 1; // Excellence
-        } else if (['B+', 'B', 'B-'].includes(grade)) {
-            category = 2; // Honor Roll
-        } else {
-            category = 3; // Participation
+        // Assign specific categories for individual grades
+        switch (grade) {
+            case 'A+':
+                category = 1; // Excellence - Top Performer
+                break;
+            case 'A':
+                category = 2; // Excellence
+                break;
+            case 'A-':
+                category = 3; // High Achiever
+                break;
+            case 'B+':
+                category = 4; // Above Average
+                break;
+            case 'B':
+                category = 5; // Average
+                break;
+            case 'B-':
+                category = 6; // Satisfactory
+                break;
+            case 'C+':
+                category = 7; // Needs Improvement
+                break;
+            case 'C':
+                category = 8; // Below Average
+                break;
+            case 'C-':
+                category = 9; // At Risk
+                break;
+            default:
+                category = 10; // Participation - Other grades (e.g., D, F)
         }
 
         awards.push({ course, grade, category });
@@ -53,64 +77,12 @@ const categorizeAwards = (grades) => {
     return awards;
 };
 
-// Endpoint to process awards
-app.post('/awards/process', async (req, res) => {
-    const { token, userId } = req.body;
-
-    if (!token || !userId) {
-        return res.status(400).json({ message: "Token and userId are required" });
-    }
-
-    try {
-        // Call the get_grades endpoint
-        const response = await axios.get(`${canvasHost}/canvas/get_grades`, { params: { token } });
-
-        if (response.status === 200) {
-            const { grades } = response.data;
-
-            // Process grades into award categories
-            const gradeDetails = grades.map((gradeString) => {
-                const [coursePart, gradePart] = gradeString.split(', Grades: ');
-                const course = coursePart.replace('Course: ', '').trim();
-                const grade = gradePart.trim();
-                return { course, grade };
-            });
-
-            const awards = categorizeAwards(gradeDetails);
-
-            // Connect to MongoDB and insert awards
-            await connectToMongo();
-            const db = client.db('TeachersPet');
-            const collection = db.collection('UserAwards');
-
-            const result = await collection.insertOne({
-                userId: new ObjectId(userId), // Store userId as ObjectId
-                awards,
-                createdAt: new Date(),
-            });
-
-            res.json({
-                message: "Awards processed and published successfully",
-                resultId: result.insertedId,
-            });
-        } else {
-            res.status(response.status).json({
-                message: "Error fetching grades",
-                error: response.data,
-            });
-        }
-    } catch (error) {
-        console.error("Error processing awards:", error);
-        res.status(500).json({ message: "Internal server error", error: error.message });
-    }
-});
-
-// Endpoint to view awards
+// Combined Endpoint: View or Process Awards
 app.get('/awards/view', async (req, res) => {
-    const { userId } = req.query;
+    const { userId, token } = req.query;
 
-    if (!userId) {
-        return res.status(400).json({ success: false, message: 'User ID is required' });
+    if (!userId || !token) {
+        return res.status(400).json({ success: false, message: 'User ID and token are required' });
     }
 
     try {
@@ -118,14 +90,50 @@ app.get('/awards/view', async (req, res) => {
         const db = client.db('TeachersPet');
         const collection = db.collection('UserAwards');
 
-        const userAwards = await collection.findOne({ userId: new ObjectId(userId) });
+        // Check if user awards already exist
+        let userAwards = await collection.findOne({ userId: new ObjectId(userId) });
+
         if (!userAwards) {
-            return res.status(404).json({ success: false, message: 'No awards found for this user' });
+            console.log("User ID not found. Processing awards...");
+            
+            // Fetch grades using the token
+            const response = await axios.get(`${canvasHost}/canvas/get_grades`, { params: { token } });
+
+            if (response.status === 200) {
+                const { grades } = response.data;
+
+                // Process grades into award categories
+                const gradeDetails = grades.map((gradeString) => {
+                    const [coursePart, gradePart] = gradeString.split(', Grades: ');
+                    const course = coursePart.replace('Course: ', '').trim();
+                    const grade = gradePart.trim();
+                    return { course, grade };
+                });
+
+                const awards = categorizeAwards(gradeDetails);
+
+                // Insert processed awards into MongoDB
+                const result = await collection.insertOne({
+                    userId: new ObjectId(userId),
+                    token,
+                    awards,
+                    createdAt: new Date(),
+                });
+
+                userAwards = { awards };
+                console.log("Awards processed and saved:", result.insertedId);
+            } else {
+                return res.status(response.status).json({
+                    success: false,
+                    message: "Error fetching grades",
+                    error: response.data,
+                });
+            }
         }
 
         res.json({ success: true, data: userAwards.awards });
     } catch (error) {
-        console.error('Error fetching UserAwards:', error);
+        console.error('Error processing or fetching awards:', error);
         res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
     }
 });
