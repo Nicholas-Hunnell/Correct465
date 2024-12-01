@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ViewGoogleClassroomGradesButton from "../Components/ViewGoogleClassroomGradesButton";
+import ConnectGoogleClassroom from "../Components/ConnectGoogleClassroom.jsx";
 
 let userId = null;
 let canvasToken = null;
@@ -131,31 +132,19 @@ const Home = () => {
             <div style={{ textAlign: 'center', margin: '20px 0' }}>
                 <h1 style={{ color: '#1c1c1c', fontSize: '2.5rem', margin: 0 }}>Teacher's Pet</h1>
             </div>
-
-            {/* Navigation Bar */}
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    backgroundColor: '#1c1c1c',
-                    borderRadius: '12px',
-                    padding: '10px 20px',
-                    marginBottom: '10px',
-                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
-                }}
-            >
-                <a href={googleClassroomRedirect} style={buttonStyle}>
-                    Connect Google Classroom Account
-                </a>
-                <a href="http://localhost:3000/GradeReviewPage/" style={buttonStyle}>
-                    View Canvas Grades
-                </a>
-                <a href="http://localhost:3000/GradeHelpPage/" style={buttonStyle}>
-                    View Grade Help
-                </a>
-                <button style={buttonStyle} onClick={handleAwardsClick}>
-                    Go to Awards Page
-                </button>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                backgroundColor: '#1c1c1c',
+                borderRadius: '12px',
+                padding: '10px 20px',
+                marginBottom: '10px',
+                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
+            }}>
+                <ConnectGoogleClassroom userId = {userId} />
+                <a href="http://localhost:3000/GradeReviewPage/" style={buttonStyle}>View Canvas Grades</a>
+                <a href="http://localhost:3000/GradeHelpPage/" style={buttonStyle}>View Grade Help</a>
+                <button style={buttonStyle} onClick={handleAwardsClick}>Go to Awards Page</button>
                 <ViewGoogleClassroomGradesButton />
                 <button style={buttonStyle} onClick={handleSettingsClick}>
                     Settings

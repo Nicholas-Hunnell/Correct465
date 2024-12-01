@@ -1,7 +1,7 @@
 import React from "react";
 import Button from "react-bootstrap/Button";
 
-function TypesExample({ userId }) {
+function ConnectGoogleClassroom({ userId }) {
     const handleGoogleAuth = () => {
         const authUrl = `http://127.0.0.1:3002/auth/google?userId=${encodeURIComponent(userId)}`;
         window.location.href = authUrl; // Redirect the user to backend's Google OAuth endpoint
@@ -30,4 +30,4 @@ function TypesExample({ userId }) {
     );
 }
 
-export default TypesExample;
+export default ConnectGoogleClassroom;
