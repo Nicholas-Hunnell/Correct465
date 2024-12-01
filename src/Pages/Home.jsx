@@ -11,7 +11,6 @@ const Home = () => {
     const [grades, setGrades] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-
     const data = location.state;
     let loggedInUser = data?.user || {};
     userId = loggedInUser._id;
@@ -33,13 +32,10 @@ const Home = () => {
                         'Content-Type': 'application/json',
                     },
                 });
-
                 if (!response.ok) {
                     throw new Error('Error fetching course grades');
                 }
-
                 const data = await response.json();
-
                 const parsedCourses = (data.grades || []).map((courseString) => {
                     const match = courseString.match(/Course:\s(.+?),\sGrades:\s(.+)/);
                     if (match) {
@@ -47,7 +43,6 @@ const Home = () => {
                     }
                     return null;
                 }).filter(Boolean);
-
                 setGrades(parsedCourses);
             } catch (err) {
                 setError("Error fetching course grades: " + err.message);
@@ -55,79 +50,57 @@ const Home = () => {
                 setLoading(false);
             }
         };
-
         fetchCourseGrades();
     }, [canvasToken]);
 
-    // Inject CSS for scrolling animation
     useEffect(() => {
         const scrollAnimation = `
         @keyframes scroll {
-          from {
-            transform: translateX(100%);
-          }
-          to {
-            transform: translateX(-100%);
-          }
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(-100%);
+            }
         }
         `;
         const style = document.createElement("style");
         style.innerHTML = scrollAnimation;
         document.head.appendChild(style);
-
         return () => {
             document.head.removeChild(style);
         };
     }, []);
 
     return (
-        <div
-            style={{
-                backgroundColor: '#87CEEB',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                minHeight: '100vh',
-                margin: 0,
-                fontFamily: 'Arial, sans-serif',
-            }}
-        >
-            {/* Title Section */}
+        <div style={{
+            backgroundColor: '#87CEEB',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            minHeight: '100vh',
+            margin: 0,
+            fontFamily: 'Arial, sans-serif',
+        }}>
             <div style={{ textAlign: 'center', margin: '20px 0' }}>
                 <h1 style={{ color: '#1c1c1c', fontSize: '2.5rem', margin: 0 }}>Teacher's Pet</h1>
             </div>
-
-            {/* Navigation Bar */}
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    backgroundColor: '#1c1c1c',
-                    borderRadius: '12px',
-                    padding: '10px 20px',
-                    marginBottom: '10px',
-                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
-                }}
-            >
-                <a href={googleClassroomRedirect} style={buttonStyle}>
-                    Connect Google Classroom Account
-                </a>
-                <a href="http://localhost:3000/GradeReviewPage/" style={buttonStyle}>
-                    View Canvas Grades
-                </a>
-                <a href="http://localhost:3000/GradeHelpPage/" style={buttonStyle}>
-                    View Grade Help
-                </a>
-                <button style={buttonStyle} onClick={handleAwardsClick}>
-                    Go to Awards Page
-                </button>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                backgroundColor: '#1c1c1c',
+                borderRadius: '12px',
+                padding: '10px 20px',
+                marginBottom: '10px',
+                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
+            }}>
+                <a href={googleClassroomRedirect} style={buttonStyle}>Connect Google Classroom Account</a>
+                <a href="http://localhost:3000/GradeReviewPage/" style={buttonStyle}>View Canvas Grades</a>
+                <a href="http://localhost:3000/GradeHelpPage/" style={buttonStyle}>View Grade Help</a>
+                <button style={buttonStyle} onClick={handleAwardsClick}>Go to Awards Page</button>
                 <ViewGoogleClassroomGradesButton />
-                <button style={buttonStyle} onClick={handleSettingsClick}>
-                    Settings
-                </button>
+                <button style={buttonStyle} onClick={handleSettingsClick}>Settings</button>
             </div>
-
-            {/* Moving Grades Ticker */}
             <div style={tickerStyle}>
                 {loading ? (
                     <p style={{ color: '#fff' }}>Loading grades...</p>
@@ -136,12 +109,17 @@ const Home = () => {
                 ) : (
                     <div style={tickerInnerStyle}>
                         {grades.map((course, index) => (
-                            <span key={index} style={tickerItemStyle}>
-                                {course.courseName}: {course.grade}
-                            </span>
+                            <span key={index} style={tickerItemStyle}>{course.courseName}: {course.grade}</span>
                         ))}
                     </div>
                 )}
+            </div>
+            <div style={imageContainerStyle}>
+                <img src="https://www.clker.com/cliparts/8/6/d/9/1220545662890146AJ_Apple_Worm.svg" alt="Apple Worm" style={imageStyle} />
+                <div style={bubbleStyle}>
+                    Welcome Back To Teacher's Pet!
+                    <div style={bubbleTailStyle}></div>
+                </div>
             </div>
         </div>
     );
@@ -175,12 +153,52 @@ const tickerStyle = {
 
 const tickerInnerStyle = {
     display: 'inline-block',
-    animation: 'scroll 30s linear infinite', // Slower speed
+    animation: 'scroll 30s linear infinite',
 };
 
 const tickerItemStyle = {
     display: 'inline-block',
-    margin: '0 10px', // Reduced spacing
+    margin: '0 10px',
+};
+
+const imageContainerStyle = {
+    position: 'absolute',
+    bottom: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+};
+
+const imageStyle = {
+    width: '150px',
+    height: '150px',
+};
+
+const bubbleStyle = {
+    position: 'absolute',
+    top: '-80px',
+    backgroundColor: '#fff',
+    color: '#000',
+    borderRadius: '15px',
+    padding: '10px 20px',
+    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
+    fontSize: '1rem',
+    textAlign: 'center',
+    transform: 'translateX(-50%)',
+    left: '50%',
+    maxWidth: '300px',
+};
+
+const bubbleTailStyle = {
+    position: 'absolute',
+    width: '0',
+    height: '0',
+    bottom: '-10px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    borderStyle: 'solid',
+    borderWidth: '10px 10px 0 10px',
+    borderColor: '#fff transparent transparent transparent',
 };
 
 export default Home;

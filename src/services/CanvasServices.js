@@ -500,8 +500,8 @@ app.get('/canvas/get_canvas_account_info', (req, res) => {
 
 
                 console.log('Canvas User ID:', canvasUserId);  // Log the user ID for debugging
-                
-                res.json({ 
+
+                res.json({
                     userId: canvasUserId,  // Send back the correct user ID (short-form)
                     ...userInfo  // Send the rest of the user info as well
                 });
@@ -616,7 +616,7 @@ function fetchCourseName(token, courseId) {
 
 
 app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm!!', (req, res) => {
-    const { token } = req.query;  
+    const { token } = req.query;
 
 
     if (!token) {
@@ -627,9 +627,9 @@ app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm!!', (req, res) => {
 
 
     const courseOptions = {
-        hostname: 'canvas.instructure.com',  
+        hostname: 'canvas.instructure.com',
         port: 443,
-        path: `/api/v1/users/self/favorites/courses?enrollment_state=active`,  
+        path: `/api/v1/users/self/favorites/courses?enrollment_state=active`,
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -781,9 +781,9 @@ app.get('/canvas/get_course_name', (req, res) => {
 
     // Canvas API options
     const courseOptions = {
-        hostname: 'canvas.instructure.com', 
+        hostname: 'canvas.instructure.com',
         port: 443,
-        path: `/api/v1/courses/${course_id}`, 
+        path: `/api/v1/courses/${course_id}`,
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,

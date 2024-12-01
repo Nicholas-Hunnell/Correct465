@@ -8,8 +8,24 @@ function TypesExample({ userId }) {
     };
 
     return (
-        <Button onClick={handleGoogleAuth} variant="primary">
-            Connect Google Classroom
+
+        <Button onClick={handleGoogleAuth} variant="primary"
+            style={{
+                display: 'inline-block',
+                marginBottom: '10px',
+                padding: '12px',
+                textDecoration: 'none',
+                color: '#000',
+                backgroundColor: '#3a9ad9',
+                borderRadius: '5px',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                transition: 'background-color 0.3s',
+            }}
+            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
+            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
+        >
+            Connect Google Classroom Account
         </Button>
     );
 }

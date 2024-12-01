@@ -5,9 +5,18 @@ import CourseGradesDisplay from '../Components/OverallCanvasGrades.jsx';
 
 const GradeReviewPage = () => {
     const token = localStorage.getItem('canvasToken');
+    const userId = localStorage.getItem('userId');
+
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [selectedGrade, setSelectedGrade] = useState(null);
+    const [userGifs, setUserGifs] = useState({
+        'A': 'https://media.tenor.com/EmZ0N3llkAkAAAAM/cat-cats.gif',
+        'B': 'https://media.tenor.com/v3DAIe73r00AAAAM/happy-cat-smile-cat.gif',
+        'C': 'https://media.tenor.com/hnH5r-jI1M8AAAAM/pipa-cat-pipa.gif',
+        'D': 'https://i.pinimg.com/originals/d9/df/92/d9df9239a488ae9f2f5efd5f0b56af5e.gif',
+        'F': 'https://media1.tenor.com/images/9413ffc5a11722a3cc456a88810750bd/tenor.gif?itemid=14193216',
+    });
 
     const navigate = useNavigate();
 
@@ -17,6 +26,44 @@ const GradeReviewPage = () => {
         }
     }, [token]);
 
+    // Pre-fetch GIF data
+    useEffect(() => {
+        const fetchUserGifs = async () => {
+            if (userId) {
+                try {
+                    const response = await fetch(`http://127.0.0.1:3006/photo/getGifs?userId=${userId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch user data');
+                    }
+
+                    const data = await response.json();
+                    setUserGifs((prevGifs) => ({
+                        ...prevGifs,
+                        ...data,
+                    }));
+                } catch (error) {
+                    console.error('Error fetching user data:', error);
+                }
+            }
+        };
+
+        fetchUserGifs();
+    }, [userId]);
+
+    const handleGradeSelection = (grade) => {
+        setSelectedGrade(grade);
+    };
+
+    const getGifForGrade = (grade) => {
+        return userGifs[grade] || 'https://example.com/default-gif.gif';
+    };
+
     if (error) {
         return <div>Error: {error}</div>;
     }
@@ -24,10 +71,6 @@ const GradeReviewPage = () => {
     if (loading) {
         return <div>Loading...</div>;
     }
-
-    const handleGradeSelection = (grade) => {
-        setSelectedGrade(grade);
-    };
 
     return (
         <div style={styles.pageContainer}>
@@ -47,7 +90,7 @@ const GradeReviewPage = () => {
             <div style={styles.rightContainer}>
                 {selectedGrade ? (
                     <img
-                        src={getGifForGrade(selectedGrade.grade)}
+                        src={getGifForGrade(selectedGrade.grade)} // This is now synchronous
                         alt={`Grade ${selectedGrade.grade} gif`}
                         style={styles.gif}
                     />
@@ -57,18 +100,6 @@ const GradeReviewPage = () => {
             </div>
         </div>
     );
-};
-
-const getGifForGrade = (grade) => {
-    const gifs = {
-        'A': 'https://media.tenor.com/EmZ0N3llkAkAAAAM/cat-cats.gif',
-        'B': 'https://media.tenor.com/v3DAIe73r00AAAAM/happy-cat-smile-cat.gif',
-        'C': 'https://media.tenor.com/hnH5r-jI1M8AAAAM/pipa-cat-pipa.gif',
-        'D': 'https://i.pinimg.com/originals/d9/df/92/d9df9239a488ae9f2f5efd5f0b56af5e.gif',
-        'F': 'https://media1.tenor.com/images/9413ffc5a11722a3cc456a88810750bd/tenor.gif?itemid=14193216',
-    };
-
-    return gifs[grade] || 'https://example.com/default-gif.gif';
 };
 
 const styles = {
@@ -95,9 +126,9 @@ const styles = {
     rightContainer: {
         flex: 1,
         display: 'flex',
-        justifyContent: 'center', // Centers horizontally
-        alignItems: 'center',    // Centers vertically
-        height: '100%',          // Ensures the container fills its parent height
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%',
         padding: '20px',
         textAlign: 'center',
     },
@@ -105,6 +136,6 @@ const styles = {
         width: '300px',
         height: 'auto',
     },
-}
+};
 
 export default GradeReviewPage;
