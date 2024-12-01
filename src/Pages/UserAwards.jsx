@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { userId } from './Home'; // Import userId from Home.jsx
 
 const UserAwards = () => {
+    const token = localStorage.getItem('canvasToken');
+    const canvasId  = localStorage.getItem('canvasId');
     const [awards, setAwards] = useState([]);
     const [selectedAward, setSelectedAward] = useState(null); // Track the award selected for the popup
     const [error, setError] = useState(null);
