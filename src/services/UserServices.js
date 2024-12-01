@@ -43,7 +43,20 @@ app.post('/user/create_user', async (req, res) => {
             ...(req.body.CanvasToken && { CanvasToken: req.body.CanvasToken })
         };
 
-        const result = client.db("TeachersPet").collection("Users").insertOne(user);
+        const result = await client.db("TeachersPet").collection("Users").insertOne(user);
+        var userId = await client.db("TeachersPet").collection("Users").findOne({Email: req.body.Email});
+        userId = userId._id;
+        const result2 = await client.db("TeachersPet").collection("Gifs").insertOne({
+                "userId":userId.toString(),
+                "gifs": {
+                    "A":"https://media.tenor.com/EmZ0N3llkAkAAAAM/cat-cats.gif",
+                    "B":"https://media.tenor.com/v3DAIe73r00AAAAM/happy-cat-smile-cat.gif",
+                    "C":"https://media.tenor.com/hnH5r-jI1M8AAAAM/pipa-cat-pipa.gif",
+                    "D":"https://i.pinimg.com/originals/d9/df/92/d9df9239a488ae9f2f5efd5f0b56af5e.gif",
+                    "F":"https://media1.tenor.com/images/9413ffc5a11722a3cc456a88810750bd/tenor.gif?itemid=14193216"
+                }
+        });
+
         res.status(201).json({
             message: 'Successfully called user/create_user\nFirstName ' + user.FirstName + '\n' + 'Using ' + user.DashboardService
         });

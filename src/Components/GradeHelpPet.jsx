@@ -43,18 +43,18 @@ const GradeHelpPet = ({ selectedGrade }) => {
   }, [selectedGrade]);
 
   return (
-    <div style={styles.pageContainer}>
-      <div style={styles.leftContainer}>
-        <div style={styles.speechBubble}>
-          {loading ? "Thinking..." : speechText}
+      <div style={styles.pageContainer}>
+        <div style={styles.leftContainer}>
+          <div style={styles.speechBubble}>
+            {loading ? "Thinking..." : speechText}
+          </div>
+          <img
+              src="https://i.etsystatic.com/20628809/r/il/a121f8/2294461568/il_570xN.2294461568_3r6f.jpg"
+              alt="Animal"
+              style={styles.animalImage}
+          />
         </div>
-        <img
-          src="https://i.etsystatic.com/20628809/r/il/a121f8/2294461568/il_570xN.2294461568_3r6f.jpg"
-          alt="Animal"
-          style={styles.animalImage}
-        />
       </div>
-    </div>
   );
 };
 

@@ -4,7 +4,7 @@ const {MongoClient, ObjectId} = require("mongodb");
 const app = express();
 const cors = require('cors');
 app.use(cors());
-app.use(express.json());
+
 const https = require('https');
 const { OAuth2Client } = require("google-auth-library");
 const react = require('react');
@@ -623,6 +623,7 @@ app.get('/auth/google', (req, res) => {
         response_type: 'code',
         client_id: clientId,
         redirect_uri: redirectUri,
+        prompt: 'consent', // Forces consent screen
         state: JSON.stringify({ userId }), // Optional state to track the user
     })}`;
 
@@ -698,6 +699,7 @@ app.get("/auth/googleCallback", async (req, res) => {
 
 app.post('/auth/googleRefresh', async (req, res) => {
     const refreshToken = req.query.refreshToken;
+    console.log("Refresh Token passed in: "+refreshToken);
     if (!refreshToken) {
         return res.status(400).json({ error: 'refreshToken is required' });
     }

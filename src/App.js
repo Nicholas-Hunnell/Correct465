@@ -10,6 +10,8 @@ import GradeReviewPage from './Pages/GradeReviewPage.jsx';
 import GradeHelpPage from './Pages/GradeHelpPage.jsx'
 import Settings from "./Pages/Settings.jsx"
 import GradeReviewPage_Google from "./Pages/GradeReviewPage_Google.jsx";
+//import AwardPage from './Pages/Awards.jsx';
+import GradeHelpPage_Google from "./Pages/GradeHelpPage_Google.jsx";
 import UserAwards from './Pages/UserAwards.jsx';
 
 const App = () => {
@@ -27,6 +29,7 @@ const App = () => {
                 <Route path="/GradeHelpPage" element={<GradeHelpPage />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/GradeReviewPage_Google" element={<GradeReviewPage_Google/>} />
+                <Route path="/GradeHelpPage_Google" element={<GradeHelpPage_Google />} />
                 <Route path="/UserAwards" element={<UserAwards />} />
             </Routes>
         </Router>
