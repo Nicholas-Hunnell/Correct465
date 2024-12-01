@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 const Settings = () => {
     const [editableUser, setEditableUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [showGifEditor, setShowGifEditor] = useState(false);
+    const [gifInputs, setGifInputs] = useState({ A: '', B: '', C: '', D: '', F: '' });
 
     const userId = localStorage.getItem('userId');
     console.log("Retrieved userId:", userId);
@@ -12,7 +14,7 @@ const Settings = () => {
             if (userId) {
                 try {
                     const response = await fetch(`http://127.0.0.1:3003/user/get_user_by_ID?id=${userId}`, {
-                        method: 'GET', 
+                        method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
                         },
@@ -41,14 +43,25 @@ const Settings = () => {
         });
     };
 
-    const handleEditToggle = () =>{
-        setIsEditing(!isEditing);
+    const handleGifInputChange = (e) => {
+        const { name, value } = e.target;
+        setGifInputs({
+            ...gifInputs,
+            [name]: value,
+        });
     };
 
+    const handleEditToggle = () => {
+        setIsEditing(!isEditing);
+        if (!isEditing) {
+            setShowGifEditor(false); // Close dropdown when exiting edit mode
+        }
+    };
 
     const handleSave = async () => {
         try {
-            const response = await fetch('http://127.0.0.1:3003/user/modify_user', {
+            // Save user data
+            const userResponse = await fetch('http://127.0.0.1:3003/user/modify_user', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -59,17 +72,31 @@ const Settings = () => {
                 }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                alert(errorData.message); // Show specific error message
-                return;
+            if (!userResponse.ok) {
+                throw new Error('Failed to save user information');
+            }
+
+            // Save GIF inputs
+            const gifResponse = await fetch('http://127.0.0.1:3006/photo/updateGifs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: userId,
+                    newGifs: gifInputs,
+                }),
+            });
+
+            if (!gifResponse.ok) {
+                throw new Error('Failed to save GIFs');
             }
 
             setIsEditing(false);
-            alert('User information saved!');
+            alert('User information and GIFs saved!');
         } catch (error) {
-            console.error('Error updating user data:', error);
-            alert('Failed to save user information.');
+            console.error('Error saving data:', error);
+            alert('Failed to save data.');
         }
     };
 
@@ -97,13 +124,13 @@ const Settings = () => {
             <div
                 style={{
                     backgroundColor: '#1c1c1c',
-                    padding: '30px',
+                    padding: '20px',
                     borderRadius: '8px',
                     color: '#a3c9f1',
                 }}
             >
-                <label style={{display: 'block', marginBottom: '10px'}}>
-                    First Name:
+                <label style={{ display: 'block', marginBottom: '10px' }}>
+                    Name:
                     <input
                         type="text"
                         name="FirstName"
@@ -122,7 +149,7 @@ const Settings = () => {
                         }}
                     />
                 </label>
-                <label style={{display: 'block', marginBottom: '10px'}}>
+                <label style={{ display: 'block', marginBottom: '10px' }}>
                     Last Name:
                     <input
                         type="text"
@@ -142,7 +169,7 @@ const Settings = () => {
                         }}
                     />
                 </label>
-                <label style={{display: 'block', marginBottom: '10px'}}>
+                <label style={{ display: 'block', marginBottom: '10px' }}>
                     Email:
                     <input
                         type="email"
@@ -162,66 +189,55 @@ const Settings = () => {
                         }}
                     />
                 </label>
-                <label style={{display: 'block', marginBottom: '10px'}}>
-                    Password:
-                    <input
-                        type="password"
-                        name="Password"
-                        value={editableUser.Password || ''}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
+                <div style={{ marginTop: '20px' }}>
+                    <button
+                        onClick={() => isEditing && setShowGifEditor(!showGifEditor)}
                         style={{
-                            width: '100%',
-                            padding: '10px',
+                            padding: '10px 20px',
+                            backgroundColor: isEditing ? '#3a9ad9' : '#666',
+                            color: '#000',
+                            border: 'none',
                             borderRadius: '5px',
-                            border: '1px solid #333',
-                            backgroundColor: isEditing ? '#2b2b2b' : '#1c1c1c',
-                            color: '#a3c9f1',
-                            outline: 'none',
-                            marginTop: '5px',
+                            cursor: isEditing ? 'pointer' : 'not-allowed',
+                            fontWeight: 'bold',
+                            marginTop: '20px',
+                            transition: 'background-color 0.3s',
                         }}
-                    />
-                </label>
-                <label style={{display: 'block', marginBottom: '10px'}}>
-                    School Name:
-                    <input
-                        type="CollegeName"
-                        name="CollegeName"
-                        value={editableUser.CollegeName || ''}
-                        onChange={handleInputChange}
                         disabled={!isEditing}
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            borderRadius: '5px',
-                            border: '1px solid #333',
-                            backgroundColor: isEditing ? '#2b2b2b' : '#1c1c1c',
-                            color: '#a3c9f1',
-                            outline: 'none',
-                            marginTop: '5px',
-                        }}
-                    />
-                </label>
-                <label style={{display: 'block', marginBottom: '10px'}}>
-                    Canvas Token:
-                    <input
-                        type="CanvasToken"
-                        name="CanvasToken"
-                        value={editableUser.CanvasToken || ''}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            borderRadius: '5px',
-                            border: '1px solid #333',
-                            backgroundColor: isEditing ? '#2b2b2b' : '#1c1c1c',
-                            color: '#a3c9f1',
-                            outline: 'none',
-                            marginTop: '5px',
-                        }}
-                    />
-                </label>
+                        onMouseOver={(e) => isEditing && (e.target.style.backgroundColor = '#66b8ff')}
+                        onMouseOut={(e) => isEditing && (e.target.style.backgroundColor = '#3a9ad9')}
+                    >
+                        Edit Cat Gifs
+                    </button>
+                    {showGifEditor && (
+                        <div style={{ marginTop: '20px' }}>
+                            <p style={{ marginBottom: '10px', color: '#a3c9f1' }}>
+                                Paste the image/GIF URLs below. Each image/GIF will appear when you select the respective grade.
+                            </p>
+                            {['A', 'B', 'C', 'D', 'F'].map((field) => (
+                                <label key={field} style={{ display: 'block', marginBottom: '10px' }}>
+                                    {field}:
+                                    <input
+                                        type="text"
+                                        name={field}
+                                        value={gifInputs[field]}
+                                        onChange={handleGifInputChange}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px',
+                                            borderRadius: '5px',
+                                            border: '1px solid #333',
+                                            backgroundColor: '#2b2b2b',
+                                            color: '#a3c9f1',
+                                            outline: 'none',
+                                            marginTop: '5px',
+                                        }}
+                                    />
+                                </label>
+                            ))}
+                        </div>
+                    )}
+                </div>
                 <button
                     onClick={handleEditToggle}
                     style={{
@@ -232,7 +248,6 @@ const Settings = () => {
                         borderRadius: '5px',
                         cursor: 'pointer',
                         fontWeight: 'bold',
-                        marginRight: '10px',
                         marginTop: '20px',
                         transition: 'background-color 0.3s',
                     }}
