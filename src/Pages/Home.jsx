@@ -80,6 +80,41 @@ const Home = () => {
         };
     }, []);
 
+    // Inject CSS for scaling and color-changing animation of "GRADES ARE FUN"
+    useEffect(() => {
+        const scaleTextAnimation = `
+            @keyframes scaleText {
+                0% {
+                    transform: rotate(-15deg) scale(1);
+                    color: hsl(0, 100%, 50%);
+                }
+                25% {
+                    transform: rotate(-15deg) scale(1.2);
+                    color: hsl(90, 100%, 50%);
+                }
+                50% {
+                    transform: rotate(-15deg) scale(1);
+                    color: hsl(180, 100%, 50%);
+                }
+                75% {
+                    transform: rotate(-15deg) scale(1.2);
+                    color: hsl(270, 100%, 50%);
+                }
+                100% {
+                    transform: rotate(-15deg) scale(1);
+                    color: hsl(360, 100%, 50%);
+                }
+            }
+        `;
+        const style = document.createElement("style");
+        style.innerHTML = scaleTextAnimation;
+        document.head.appendChild(style);
+
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
+
     return (
         <div
             style={{
@@ -242,7 +277,7 @@ const bubbleTailStyle = {
     borderColor: '#fff transparent transparent transparent', // Matches bubble background
 };
 
-// New style for the arched text
+// New style for the arched text with animation
 const archedTextStyle = {
     position: 'absolute',
     top: '-180px',  // Position the text above the image
@@ -254,6 +289,7 @@ const archedTextStyle = {
     transform: 'rotate(-15deg)',  // Apply rotation for the arch
     transformOrigin: 'center',
     textAlign: 'center',
+    animation: 'scaleText 1s ease-in-out infinite',  // Apply animation
 };
 
 export default Home;
