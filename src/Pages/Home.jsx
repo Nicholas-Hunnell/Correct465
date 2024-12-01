@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ViewGoogleClassroomGradesButton from "../Components/ViewGoogleClassroomGradesButton";
 
@@ -7,213 +7,181 @@ let canvasToken = null;
 
 const Home = () => {
     const location = useLocation();
-    const navigate = useNavigate(); // Moved inside the component body
+    const navigate = useNavigate();
+    const [grades, setGrades] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
     const data = location.state;
-    var loggedInUser = data?.user || {}; // Use optional chaining to avoid errors if data is undefined
-    userId = loggedInUser._id; // Extract and assign the user ID (from `_id` field)
-    canvasToken = loggedInUser.CanvasToken; // Extract and assign the CanvasToken
+    let loggedInUser = data?.user || {};
+    userId = loggedInUser._id;
+    canvasToken = loggedInUser.CanvasToken;
     const googleClassroomRedirect = `http://localhost:3002/auth/google/${loggedInUser.id}`;
 
-    const handleSettingsClick = () => {
-        navigate('/settings');
-    };
-    const handleAwardsClick = () => {
-        navigate('/UserAwards', { state: { userId } });
-    };
-    try{
-        refreshGoogleToken();
-        const data = location.state;
-        loggedInUser = data.user;
-    } catch (e) {
-        console.log("Error: "+e.message);
-        const queryParams = new URLSearchParams(location.search);
-        const userJson = queryParams.get('user');
-        loggedInUser = userJson ? JSON.parse(userJson) : {};
-    }
-    console.log("Logged in User:", loggedInUser);
-    console.log("User ID:", userId); // Log the extracted user ID
-    console.log("Canvas Token:", canvasToken); // Log the extracted CanvasToken
+    const handleSettingsClick = () => navigate('/settings');
+    const handleAwardsClick = () => navigate('/UserAwards', { state: { userId } });
 
+    useEffect(() => {
+        const fetchCourseGrades = async () => {
+            setLoading(true);
+            try {
+                const url = `http://127.0.0.1:3001/canvas/get_grades?token=${canvasToken}`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${canvasToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error fetching course grades');
+                }
+
+                const data = await response.json();
+
+                const parsedCourses = (data.grades || []).map((courseString) => {
+                    const match = courseString.match(/Course:\s(.+?),\sGrades:\s(.+)/);
+                    if (match) {
+                        return { courseName: match[1], grade: match[2] };
+                    }
+                    return null;
+                }).filter(Boolean);
+
+                setGrades(parsedCourses);
+            } catch (err) {
+                setError("Error fetching course grades: " + err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCourseGrades();
+    }, [canvasToken]);
+
+    // Inject CSS for scrolling animation
+    useEffect(() => {
+        const scrollAnimation = `
+        @keyframes scroll {
+          from {
+            transform: translateX(100%);
+          }
+          to {
+            transform: translateX(-100%);
+          }
+        }
+        `;
+        const style = document.createElement("style");
+        style.innerHTML = scrollAnimation;
+        document.head.appendChild(style);
+
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
 
     return (
         <div
             style={{
-                backgroundColor: '#87CEEB', // Sky Blue Background
+                backgroundColor: '#87CEEB',
                 display: 'flex',
-                justifyContent: 'center',
+                flexDirection: 'column',
                 alignItems: 'center',
-                height: '100vh',
+                minHeight: '100vh',
                 margin: 0,
                 fontFamily: 'Arial, sans-serif',
             }}
         >
+            {/* Title Section */}
+            <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                <h1 style={{ color: '#1c1c1c', fontSize: '2.5rem', margin: 0 }}>Teacher's Pet</h1>
+            </div>
+
+            {/* Navigation Bar */}
             <div
                 style={{
-                    backgroundColor: '#1c1c1c', // Dark Gray Background
+                    display: 'flex',
+                    justifyContent: 'center',
+                    backgroundColor: '#1c1c1c',
                     borderRadius: '12px',
-                    padding: '40px 30px',
-                    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.5)',
-                    textAlign: 'center',
-                    maxWidth: '600px',
-                    width: '100%',
+                    padding: '10px 20px',
+                    marginBottom: '10px',
+                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
                 }}
             >
-                {/* Header with user information and settings button */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h1 style={{ color: '#a3c9f1', marginBottom: '25px' }}>My Home Screen</h1>
-                    <div>
-                        <span style={{ marginRight: '15px', color: '#a3c9f1' }}></span>
-                        <button
-                            style={{
-                                padding: '5px 10px',
-                                backgroundColor: '#3a9ad9',
-                                color: '#000',
-                                border: 'none',
-                                borderRadius: '5px',
-                                cursor: 'pointer',
-                                fontWeight: 'bold',
-                                transition: 'background-color 0.3s',
-                            }}
-                            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
-                            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
-                            onClick={handleSettingsClick}
-                        >
-                            Settings
-                        </button>
-                    </div>
-                </div>
+                <a href={googleClassroomRedirect} style={buttonStyle}>
+                    Connect Google Classroom Account
+                </a>
+                <a href="http://localhost:3000/GradeReviewPage/" style={buttonStyle}>
+                    View Canvas Grades
+                </a>
+                <a href="http://localhost:3000/GradeHelpPage/" style={buttonStyle}>
+                    View Grade Help
+                </a>
+                <button style={buttonStyle} onClick={handleAwardsClick}>
+                    Go to Awards Page
+                </button>
+                <ViewGoogleClassroomGradesButton />
+                <button style={buttonStyle} onClick={handleSettingsClick}>
+                    Settings
+                </button>
+            </div>
 
-                {/* Main content with navigation buttons */}
-                <div style={{ marginTop: '20px' }}>
-                    <p>
-                        <a
-                            href={googleClassroomRedirect}
-                            style={{
-                                display: 'inline-block',
-                                marginBottom: '10px',
-                                padding: '12px',
-                                textDecoration: 'none',
-                                color: '#000',
-                                backgroundColor: '#3a9ad9',
-                                borderRadius: '5px',
-                                fontWeight: 'bold',
-                                fontSize: '1rem',
-                                transition: 'background-color 0.3s',
-                            }}
-                            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
-                            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
-                        >
-                            Connect Google Classroom Account
-                        </a>
-                    </p>
-                    <p>
-                        <a
-                            href="http://localhost:3000/GradeReviewPage/"
-                            style={{
-                                display: 'inline-block',
-                                marginBottom: '10px',
-                                padding: '12px',
-                                textDecoration: 'none',
-                                color: '#000',
-                                backgroundColor: '#3a9ad9',
-                                borderRadius: '5px',
-                                fontWeight: 'bold',
-                                fontSize: '1rem',
-                                transition: 'background-color 0.3s',
-                            }}
-                            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
-                            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
-                        >
-                            View Canvas Grades
-                        </a>
-                    </p>
-                    <p>
-                        <a
-                            href="http://localhost:3000/GradeHelpPage/"
-                            style={{
-                                display: 'inline-block',
-                                marginBottom: '10px',
-                                padding: '12px',
-                                textDecoration: 'none',
-                                color: '#000',
-                                backgroundColor: '#3a9ad9',
-                                borderRadius: '5px',
-                                fontWeight: 'bold',
-                                fontSize: '1rem',
-                                transition: 'background-color 0.3s',
-                            }}
-                            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
-                            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
-                        >
-                            View Grade Help
-                        </a>
-                    </p>
-                    <p>
-                        <button
-                            style={{
-                                padding: '12px',
-                                marginBottom: '10px',
-                                backgroundColor: '#3a9ad9',
-                                color: '#000',
-                                border: 'none',
-                                borderRadius: '5px',
-                                cursor: 'pointer',
-                                fontWeight: 'bold',
-                                fontSize: '1rem',
-                                transition: 'background-color 0.3s',
-                            }}
-                            onMouseOver={(e) => (e.target.style.backgroundColor = '#66b8ff')}
-                            onMouseOut={(e) => (e.target.style.backgroundColor = '#3a9ad9')}
-                            onClick={handleAwardsClick}
-                        >
-                            Go to Awards Page
-                        </button>
-                    </p>
-                    <ViewGoogleClassroomGradesButton/>
-                </div>
+            {/* Moving Grades Ticker */}
+            <div style={tickerStyle}>
+                {loading ? (
+                    <p style={{ color: '#fff' }}>Loading grades...</p>
+                ) : error ? (
+                    <p style={{ color: '#f00' }}>{error}</p>
+                ) : (
+                    <div style={tickerInnerStyle}>
+                        {grades.map((course, index) => (
+                            <span key={index} style={tickerItemStyle}>
+                                {course.courseName}: {course.grade}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
-async function refreshGoogleToken() {
-    try {
-        try {
-            const googleToken = localStorage.getItem("googleToken");
-            const googleRefreshToken = localStorage.getItem("googleRefreshToken");
-            const googleTokenExp = localStorage.getItem("googleTokenExp");
+const buttonStyle = {
+    display: 'inline-block',
+    margin: '0 10px',
+    padding: '10px 20px',
+    textDecoration: 'none',
+    color: '#000',
+    backgroundColor: '#3a9ad9',
+    borderRadius: '5px',
+    fontWeight: 'bold',
+    fontSize: '1rem',
+    transition: 'background-color 0.3s',
+    cursor: 'pointer',
+};
 
-            const now = new Date();
-            const timestamp = now.getTime();
+const tickerStyle = {
+    width: '100%',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    backgroundColor: '#000',
+    color: '#fff',
+    padding: '10px 0',
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+};
 
-            const result = await fetch(`http://localhost:3002/auth/googleRefresh?refreshToken=${encodeURIComponent(googleRefreshToken)}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'}
-            });
-            const responseData = await result.json();
+const tickerInnerStyle = {
+    display: 'inline-block',
+    animation: 'scroll 30s linear infinite', // Slower speed
+};
 
-            localStorage.setItem("googleToken", responseData.accessToken);
-            localStorage.setItem("googleRefreshToken", responseData.refreshToken);
-            localStorage.setItem("googleTokenExp", responseData.expiresIn);
-
-        } catch (e) {
-            console.log("Error whole getting 'googleToken' from storage: " + e.message);
-            return 0;
-        } finally {
-            return 0;
-        }
-
-
-    } catch (e) {
-        console.log("Error while regreshing google classroom token: " + e.message);
-        return 0;
-    } finally {
-        return 0;
-    }
-
-
-}
-
+const tickerItemStyle = {
+    display: 'inline-block',
+    margin: '0 10px', // Reduced spacing
+};
 
 export default Home;
 export { userId, canvasToken };
