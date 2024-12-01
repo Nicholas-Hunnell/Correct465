@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ViewGoogleClassroomGradesButton from "../Components/ViewGoogleClassroomGradesButton";
+import ConnectGoogleClassroom from "../Components/ConnectGoogleClassroom.jsx";
 
 let userId = null;
 let canvasToken = null;
@@ -80,6 +81,41 @@ const Home = () => {
         };
     }, []);
 
+    // Inject CSS for scaling and color-changing animation of "GRADES ARE FUN"
+    useEffect(() => {
+        const scaleTextAnimation = `
+            @keyframes scaleText {
+                0% {
+                    transform: rotate(-15deg) scale(1);
+                    color: hsl(0, 100%, 50%);
+                }
+                25% {
+                    transform: rotate(-15deg) scale(1.2);
+                    color: hsl(90, 100%, 50%);
+                }
+                50% {
+                    transform: rotate(-15deg) scale(1);
+                    color: hsl(180, 100%, 50%);
+                }
+                75% {
+                    transform: rotate(-15deg) scale(1.2);
+                    color: hsl(270, 100%, 50%);
+                }
+                100% {
+                    transform: rotate(-15deg) scale(1);
+                    color: hsl(360, 100%, 50%);
+                }
+            }
+        `;
+        const style = document.createElement("style");
+        style.innerHTML = scaleTextAnimation;
+        document.head.appendChild(style);
+
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
+
     return (
         <div
             style={{
@@ -96,31 +132,19 @@ const Home = () => {
             <div style={{ textAlign: 'center', margin: '20px 0' }}>
                 <h1 style={{ color: '#1c1c1c', fontSize: '2.5rem', margin: 0 }}>Teacher's Pet</h1>
             </div>
-
-            {/* Navigation Bar */}
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    backgroundColor: '#1c1c1c',
-                    borderRadius: '12px',
-                    padding: '10px 20px',
-                    marginBottom: '10px',
-                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
-                }}
-            >
-                <a href={googleClassroomRedirect} style={buttonStyle}>
-                    Connect Google Classroom Account
-                </a>
-                <a href="http://localhost:3000/GradeReviewPage/" style={buttonStyle}>
-                    View Canvas Grades
-                </a>
-                <a href="http://localhost:3000/GradeHelpPage/" style={buttonStyle}>
-                    View Grade Help
-                </a>
-                <button style={buttonStyle} onClick={handleAwardsClick}>
-                    Go to Awards Page
-                </button>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                backgroundColor: '#1c1c1c',
+                borderRadius: '12px',
+                padding: '10px 20px',
+                marginBottom: '10px',
+                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)',
+            }}>
+                <ConnectGoogleClassroom userId = {userId} />
+                <a href="http://localhost:3000/GradeReviewPage/" style={buttonStyle}>View Canvas Grades</a>
+                <a href="http://localhost:3000/GradeHelpPage/" style={buttonStyle}>View Grade Help</a>
+                <button style={buttonStyle} onClick={handleAwardsClick}>Go to Awards Page</button>
                 <ViewGoogleClassroomGradesButton />
                 <button style={buttonStyle} onClick={handleSettingsClick}>
                     Settings
@@ -242,7 +266,7 @@ const bubbleTailStyle = {
     borderColor: '#fff transparent transparent transparent', // Matches bubble background
 };
 
-// New style for the arched text
+// New style for the arched text with animation
 const archedTextStyle = {
     position: 'absolute',
     top: '-180px',  // Position the text above the image
@@ -254,6 +278,7 @@ const archedTextStyle = {
     transform: 'rotate(-15deg)',  // Apply rotation for the arch
     transformOrigin: 'center',
     textAlign: 'center',
+    animation: 'scaleText 1s ease-in-out infinite',  // Apply animation
 };
 
 export default Home;
