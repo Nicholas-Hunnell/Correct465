@@ -59,8 +59,10 @@ const Settings = () => {
     };
 
     const handleSave = async () => {
+
         try {
             // Save user data
+
             const userResponse = await fetch('http://127.0.0.1:3003/user/modify_user', {
                 method: 'POST',
                 headers: {
@@ -77,6 +79,7 @@ const Settings = () => {
             }
 
             // Save GIF inputs
+
             const gifResponse = await fetch('http://127.0.0.1:3006/photo/updateGifs', {
                 method: 'POST',
                 headers: {
