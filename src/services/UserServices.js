@@ -58,7 +58,7 @@ app.post('/user/create_user', async (req, res) => {
         });
 
         res.status(201).json({
-            message: 'Successfully called user/create_user\nFirstName ' + user.FirstName + '\n' + 'Using ' + user.DashboardService
+            message: 'Successfully called user/create_user FirstName :' + user.FirstName + ' Using ' + user.DashboardService
         });
     }
 });

@@ -16,7 +16,7 @@ const Home = () => {
     const data = location.state;
     let loggedInUser = data?.user || {};
     userId = loggedInUser._id;
-    canvasToken = loggedInUser.CanvasToken;
+    canvasToken = loggedInUser.CanvasToken || localStorage.getItem('canvasToken');
     const googleClassroomRedirect = `http://localhost:3002/auth/google/${loggedInUser.id}`;
 
     const handleSettingsClick = () => navigate('/settings');

@@ -16,7 +16,6 @@ app.listen(port, hostname, async () => {
     console.log(`Photo services server running at http://${hostname}:${port}/`);
 });
 
-
 app.post('/photo/updateGifs', async (req, res) => {
 
     var input = req.body;

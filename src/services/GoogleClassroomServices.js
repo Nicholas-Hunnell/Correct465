@@ -4,6 +4,7 @@ const {MongoClient, ObjectId} = require("mongodb");
 const app = express();
 const cors = require('cors');
 app.use(cors());
+app.use(express.json());
 
 const https = require('https');
 const { OAuth2Client } = require("google-auth-library");
@@ -439,105 +440,6 @@ app.get('/Gclass/getAssignmentLink', async (req, res) => {
     courseworkRequest.end();
 });
 
-app.get('/Gclass/get_grades', async (req, res) => {
-    res.status(200).json({
-        message: 'Successfully Gclass/get_grades'
-    });
-
-    try {
-        // Step 1: Get list of courses
-        const coursesUrl = 'https://classroom.googleapis.com/v1/courses?courseStates=ACTIVE';
-        const coursesData = await httpsGet(coursesUrl);
-        const courses = coursesData.courses || [];
-
-        if (courses.length === 0) {
-            console.log('No courses found.');
-            return;
-        }
-
-        // Step 2: For each course, get coursework and calculate grades
-        for (const course of courses) {
-            const courseId = course.id;
-            const courseworkUrl = `https://classroom.googleapis.com/v1/courses/${courseId}/courseWork`;
-            const courseworkData = await httpsGet(courseworkUrl);
-            const courseWork = courseworkData.courseWork || [];
-
-            let totalScore = 0;
-            let totalMaxPoints = 0;
-
-            // Step 3: Iterate through each coursework to get grades
-            for (const work of courseWork) {
-                const courseWorkId = work.id;
-                const maxPoints = work.maxPoints || 0;
-
-                const submissionsUrl = `https://classroom.googleapis.com/v1/courses/${courseId}/courseWork/${courseWorkId}/studentSubmissions`;
-                const submissionsData = await httpsGet(submissionsUrl);
-                const studentSubmissions = submissionsData.studentSubmissions || [];
-
-                // Calculate total score and max points
-                for (const submission of studentSubmissions) {
-                    if (submission.assignedGrade !== undefined) {
-                        totalScore += submission.assignedGrade;
-                        totalMaxPoints += maxPoints;
-                    }
-                }
-            }
-
-            // Calculate and display the overall grade
-            const overallGrade = totalMaxPoints > 0 ? (totalScore / totalMaxPoints) * 100 : null;
-            console.log(`Course: ${course.name}, Overall Grade: ${overallGrade ? overallGrade.toFixed(2) + '%' : 'N/A'}`);
-        }
-    } catch (error) {
-        console.error('Error retrieving grades:', error);
-    }
-
-});
-
-app.get('/Gclass/login', (req, res) => {
-    const options = {
-        hostname: '127.0.0.1',
-        port: port,
-        path: '/auth/google',
-        method: 'GET',
-        headers: {}
-    };
-
-    const apiRequest = https.request(options, apiResponse => {
-        let data = '';
-
-        apiResponse.on('data', chunk => {
-            data += chunk;
-        });
-
-        apiResponse.on('end', () => {
-            if (apiResponse.statusCode === 200) {
-                const user = {
-                    _id: ObjectId.createFromHexString(req.body.userId)
-                };
-
-                const result = client.db("TeachersPet").collection("tokens").insertOne(user);
-                res.write('<html><body><p>Authorized!! Your token is in the database.</p></body></html>')
-                res.end();
-            } else {
-                res.status(apiResponse.statusCode).json({
-                    message: 'Error during google authentication process',
-                    status: apiResponse.statusCode,
-                    error: data
-                });
-            }
-        });
-    });
-
-    apiRequest.on('error', error => {
-        res.status(500).json({
-            message: 'Error connecting to Google Classroom API',
-            error: error.message
-        });
-    });
-
-    apiRequest.end(); // Close the request properly
-})
-
 app.get('/auth/google', (req, res) => {
     const userId = req.query.userId;
     if (!userId) {
@@ -621,9 +523,7 @@ app.get("/auth/googleCallback", async (req, res) => {
 
         const frontendUrl = `http://localhost:3000/home`; // Update to match your frontend URL
         return res.redirect(
-            `${frontendUrl}?success=true&user=${encodeURIComponent(
-                JSON.stringify(oldUser)
-            )}`
+            `${frontendUrl}`
         );
 
     } catch (error) {
