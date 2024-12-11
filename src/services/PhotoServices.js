@@ -13,7 +13,7 @@ const uri = "mongodb+srv://admin:admin@cluster0.lv5o6.mongodb.net/?retryWrites=t
 const client = new MongoClient(uri);
 
 app.listen(port, hostname, async () => {
-    console.log(`Google Classroom services server running at http://${hostname}:${port}/`);
+    console.log(`Photo services server running at http://${hostname}:${port}/`);
 });
 
 
