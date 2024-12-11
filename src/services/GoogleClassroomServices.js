@@ -439,59 +439,6 @@ app.get('/Gclass/getAssignmentLink', async (req, res) => {
     courseworkRequest.end();
 });
 
-
-/*
-app.get('/Gclass/get_courses', (req, res) => {
-    const options = {
-        hostname: 'classroom.googleapis.com',
-        port: 443,
-        path: '/v1/courses',
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${req.query.gtoken}`
-        }
-    };
-
-    const apiRequest = https.request(options, apiResponse => {
-        let data = '';
-
-        apiResponse.on('data', chunk => {
-            data += chunk;
-        });
-
-        apiResponse.on('end', () => {
-            if (apiResponse.statusCode === 200) {
-                const courses = JSON.parse(data);
-                if (Array.isArray(courses.courses)) {
-                    res.writeHead(200, {'Content-Type': 'text/html'});
-                    res.write('<html><body><p>Student Courses:</p><ul>');
-
-                    courses.courses.forEach(course => {
-                        res.write(`<li>${course.name || `Course ID: ${course.id} has no name`}</li>`);
-                    });
-
-                    res.write('</ul></body></html>');
-                    res.end();
-                }
-            } else {
-                res.status(apiResponse.statusCode).json({
-                    message: 'Error retrieving courses',
-                    status: apiResponse.statusCode,
-                    error: data
-                });
-            }
-        });
-    });
-
-    apiRequest.on('error', error => {
-        res.status(500).json({ message: 'Error connecting to Google Classroom API', error: error.message });
-    });
-
-    apiRequest.end();
-});
-
-
- */
 app.get('/Gclass/get_grades', async (req, res) => {
     res.status(200).json({
         message: 'Successfully Gclass/get_grades'
@@ -544,18 +491,6 @@ app.get('/Gclass/get_grades', async (req, res) => {
         console.error('Error retrieving grades:', error);
     }
 
-});
-
-app.get('/Gclass/get_account_info', (req, res) => {
-    res.status(200).json({
-        message: 'Successfully called Gclass/get_account_info'
-    });
-});
-
-app.get('/Gclass/get_user_profile', (req, res) => {
-    res.status(200).json({
-        message: 'Successfully called Gclass/get_user_profile'
-    });
 });
 
 app.get('/Gclass/login', (req, res) => {
