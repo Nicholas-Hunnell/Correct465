@@ -31,7 +31,8 @@ app.listen(port, hostname, () => {
 
 
 ////////////////////////////////////////////   CANVAS   ///////////////////////////////////////////
-app.post('/canvas/update_token')
+
+
 app.get('/canvas/get_all_class_names', (req, res) => {
     const user = req.session.user;
 
@@ -408,6 +409,8 @@ function getLetterGrade(percentage) {
         return 'F';
     }
 }
+
+
 //NOT ALLOWED USER DOES NOT HAVE PERMISSIONS
 const { format, subMonths } = require('date-fns');
 app.get('/canvas/get_grade_changes/:studentId', (req, res) => {
@@ -462,7 +465,7 @@ app.get('/canvas/get_grade_changes/:studentId', (req, res) => {
 });
 
 
-//Gets Canvas Account info
+
 app.get('/canvas/get_canvas_account_info', (req, res) => {
     console.log('Received Headers:', req.headers);  // Log the full headers
     const token = req.headers['authorization']?.split(' ')[1]; // Extract the token
@@ -530,30 +533,6 @@ app.get('/canvas/get_canvas_account_info', (req, res) => {
 
 
 
-app.get('/canvas/get_single_class', (req, res) => {
-    res.status(200).json({
-        message: 'Successfully called canvas/get_single_class'
-    });
-});
-
-app.get('/canvas/get_all_open_assignments_for_class', (req, res) => {
-    res.status(200).json({
-        message: 'Successfully called canvas/get_all_open_assigments_for_class'
-    });
-});
-
-app.get('/canvas/get_assignment_grade', (req, res) => {
-    res.status(200).json({
-        message: 'Successfully called canvas/get_assignment_grade'
-    });
-});
-
-app.post('/canvas/auth/getToken', (req, res) => {
-    res.status(200).json({
-        message: 'Successfully called canvas/getToken'
-    });
-})
-
 function fetchCourseName(token, courseId) {
     return new Promise((resolve, reject) => {
         const courseOptions = {
@@ -609,230 +588,6 @@ function fetchCourseName(token, courseId) {
 }
 
 
-
-
-
-//ATEMPT AT ThE MEGA LOOP
-
-
-app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm!!', (req, res) => {
-    const { token } = req.query;
-
-
-    if (!token) {
-        return res.status(400).json({
-            message: 'Token is required'
-        });
-    }
-
-
-    const courseOptions = {
-        hostname: 'canvas.instructure.com',
-        port: 443,
-        path: `/api/v1/users/self/favorites/courses?enrollment_state=active`,
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json+canvas-string-ids'
-        }
-    };
-
-    const courseRequest = https.request(courseOptions, courseResponse => {
-        let courseData = '';
-
-        courseResponse.on('data', chunk => {
-            courseData += chunk;
-        });
-
-        courseResponse.on('end', () => {
-            if (courseResponse.statusCode === 200) {
-                const courses = JSON.parse(courseData);
-                const assignmentsPromises = [];
-
-                courses.forEach(course => {
-                    if (course.id) {
-                        const assignmentOptions = {
-                            hostname: 'psu.instructure.com',
-                            port: 443,
-                            path: `/api/v1/users/self/courses/${course.id}/assignments?include[]=submission&include[]=grading`,
-                            method: 'GET',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Accept': 'application/json+canvas-string-ids'
-                            }
-                        };
-
-                        const assignmentPromise = new Promise((resolve, reject) => {
-                            const assignmentRequest = https.request(assignmentOptions, assignmentResponse => {
-                                let assignmentData = '';
-
-                                assignmentResponse.on('data', chunk => {
-                                    assignmentData += chunk;
-                                });
-
-                                assignmentResponse.on('end', () => {
-                                    if (assignmentResponse.statusCode === 200) {
-                                        resolve(JSON.parse(assignmentData));
-                                    } else {
-                                        reject({
-                                            status: assignmentResponse.statusCode,
-                                            message: 'Error retrieving assignments',
-                                            error: assignmentData
-                                        });
-                                    }
-                                });
-                            });
-
-                            assignmentRequest.on('error', error => {
-                                reject({
-                                    status: 500,
-                                    message: 'Error connecting to Canvas API',
-                                    error: error.message
-                                });
-                            });
-
-                            assignmentRequest.end();
-                        });
-
-                        assignmentsPromises.push(assignmentPromise);
-                    }
-                });
-
-                // Wait for all assignment requests to complete
-                Promise.all(assignmentsPromises)
-                    .then(assignmentsArray => {
-                        const assignmentsWithGrades = [];
-
-                        assignmentsArray.forEach(assignments => {
-                            assignments.forEach(assignment => {
-                                const submission = assignment.submission;
-                                const totalPoints = assignment.points_possible || 0;
-                                const score = submission ? submission.score : 0;
-                                const CourseName = fetchCourseName(token, data.course_id)
-
-                                let letterGrade = 'Not graded';
-                                if (totalPoints > 0 && submission) {
-                                    const percentage = (score / totalPoints) * 100;
-                                    letterGrade = getLetterGrade(percentage);
-                                }
-
-                                assignmentsWithGrades.push({
-                                    courseName: assignment.course_name,
-                                    assignmentName: assignment.name,
-                                    grade: letterGrade,
-                                    score: score,
-                                    totalPoints: totalPoints,
-                                    courseid: CourseName
-                                });
-                            });
-                        });
-
-                        res.status(200).json({
-                            assignments: assignmentsWithGrades
-                        });
-                    })
-                    .catch(error => {
-                        res.status(error.status || 500).json({
-                            message: error.message,
-                            status: error.status,
-                            error: error.error
-                        });
-                    });
-            } else {
-                res.status(courseResponse.statusCode).json({
-                    message: 'Error retrieving courses',
-                    status: courseResponse.statusCode,
-                    error: courseData
-                });
-            }
-        });
-    });
-
-    courseRequest.on('error', error => {
-        res.status(500).json({
-            message: 'Error connecting to Canvas API',
-            error: error.message
-        });
-    });
-
-    courseRequest.end();
-});
-
-// Helper function to determine letter grade
-function getLetterGrade(percentage) {
-    if (percentage >= 90) return 'A';
-    if (percentage >= 80) return 'B';
-    if (percentage >= 70) return 'C';
-    if (percentage >= 60) return 'D';
-    return 'F';
-}
-
-app.get('/canvas/get_course_name', (req, res) => {
-    const { token, course_id } = req.query;
-
-    // Validate input
-    if (!token) {
-        return res.status(400).json({ message: 'Token is required' });
-    }
-
-    if (!course_id) {
-        return res.status(400).json({ message: 'Course ID is required' });
-    }
-
-    // Canvas API options
-    const courseOptions = {
-        hostname: 'canvas.instructure.com',
-        port: 443,
-        path: `/api/v1/courses/${course_id}`,
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json+canvas-string-ids'
-        }
-    };
-
-    // Make the request to Canvas API
-    const courseRequest = https.request(courseOptions, courseResponse => {
-        let courseData = '';
-
-        courseResponse.on('data', chunk => {
-            courseData += chunk;
-        });
-
-        courseResponse.on('end', () => {
-            if (courseResponse.statusCode === 200) {
-                try {
-                    const course = JSON.parse(courseData);
-                    res.status(200).json({
-                        courseName: course.name,
-                        courseCode: course.course_code
-                    });
-                } catch (error) {
-                    res.status(500).json({
-                        message: 'Error parsing response',
-                        error: error.message
-                    });
-                }
-            } else {
-                res.status(courseResponse.statusCode).json({
-                    message: 'Error retrieving course',
-                    status: courseResponse.statusCode,
-                    error: courseData
-                });
-            }
-        });
-    });
-
-    // Handle request errors
-    courseRequest.on('error', error => {
-        res.status(500).json({
-            message: 'Error connecting to Canvas API',
-            error: error.message
-        });
-    });
-
-    courseRequest.end();
-})
 
 app.get('/canvas/get_all_assignments_with_gradesOGONEnpnpm', async (req, res) => {
     const { token } = req.query;
