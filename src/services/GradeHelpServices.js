@@ -61,19 +61,6 @@ app.get('/gradeHelp/get_suggested_help_websites', async (req, res) => {
     }
 });
 
-app.get('/GradeHelp/get_suggested_help_tutoring', (req, res) => {
-    res.status(200).json({
-        message: 'Successfully called GradeHelp/get_suggested_help_websites'
-    });
-});
-
-app.post('/GradeHelp/post_suggested_help', (req, res) => {
-    res.status(200).json({
-        message: 'Successfully called post_suggested_help'
-    });
-});
-
-
 app.post('/GradeHelp/generate-content', async (req, res) => {
     try {
         const prompt = req.body.prompt; 
